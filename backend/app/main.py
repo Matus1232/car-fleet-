@@ -2,10 +2,12 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api import vehicles
 from app.core.config import settings
 from app.db.session import get_db
 
 app = FastAPI(title=settings.app_name)
+app.include_router(vehicles.router)
 
 
 @app.get("/")
