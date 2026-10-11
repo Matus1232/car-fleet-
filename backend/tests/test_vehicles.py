@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy import text
+
+from app.db.session import engine
 
 VALID = {"brand": "Skoda", "model": "Octavia", "license_plate": "BA123AB"}
 
@@ -19,9 +22,17 @@ def test_created_at_is_timezone_aware(client):
     assert created.utcoffset() == timedelta(0)
 
 
-def test_license_plate_is_normalized(client):
-    body = client.post("/vehicles", json={**VALID, "license_plate": " ba 123 ab "}).json()
+@pytest.mark.parametrize("plate", [" ba 123 ab ", "BA-123AB", "ba - 123 - ab"])
+def test_license_plate_is_normalized(client, plate):
+    body = client.post("/vehicles", json={**VALID, "license_plate": plate}).json()
     assert body["license_plate"] == "BA123AB"
+
+
+def test_plate_length_is_checked_after_normalization(client):
+    plate = "AB CD EF GH IJ KL MN OP QR ST"  # 29 znakov, po odstránení medzier 20
+    resp = client.post("/vehicles", json={**VALID, "license_plate": plate})
+    assert resp.status_code == 201
+    assert resp.json()["license_plate"] == "ABCDEFGHIJKLMNOPQRST"
 
 
 def test_whitespace_is_stripped_from_names(client):
@@ -29,7 +40,7 @@ def test_whitespace_is_stripped_from_names(client):
     assert body["brand"] == "Skoda"
 
 
-@pytest.mark.parametrize("plate", ["BA 123 AB", "ba123ab", "Ba123Ab"])
+@pytest.mark.parametrize("plate", ["BA 123 AB", "ba123ab", "Ba123Ab", "BA-123AB", "ba-123-ab"])
 def test_duplicate_plate_is_rejected_regardless_of_formatting(client, make_vehicle, plate):
     make_vehicle(license_plate="BA123AB")
     resp = client.post("/vehicles", json={**VALID, "license_plate": plate})
@@ -45,6 +56,9 @@ def test_duplicate_plate_is_rejected_regardless_of_formatting(client, make_vehic
         {**VALID, "model": "x" * 51},
         {**VALID, "license_plate": "BA#123"},
         {**VALID, "license_plate": "X" * 21},
+        {**VALID, "license_plate": ""},
+        {**VALID, "license_plate": "---"},
+        {**VALID, "license_plate": " - - "},
         {"brand": "Skoda", "model": "Octavia"},
     ],
 )
@@ -73,6 +87,17 @@ def test_list_is_paginated(client, make_vehicle):
     assert page["total"] == 5
     assert (page["skip"], page["limit"]) == (1, 2)
     assert [v["id"] for v in page["items"]] == [2, 3]
+
+
+def test_list_shows_old_rows_that_fail_input_validation(client):
+    # Prvá verzia API povoľovala aj ŠPZ ako 'BA#1'. Výstup ich musí vedieť vypísať.
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO vehicles (brand, model, license_plate) VALUES ('', 'x', 'BA#1')")
+        )
+    resp = client.get("/vehicles")
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["license_plate"] == "BA#1"
 
 
 def test_list_empty(client):

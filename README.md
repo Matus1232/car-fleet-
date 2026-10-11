@@ -12,11 +12,11 @@ docker compose up --build
 ```
 
 Migrácie databázy (`alembic upgrade head`) sa spustia automaticky pri štarte API.
-`docker-compose.override.yml` (live reload, `ENVIRONMENT=development` z `.env`) sa načíta sám;
+`docker-compose.override.yml` (live reload, `ENVIRONMENT=development`, teda zapnutý `/docs`) sa načíta sám;
 produkčný beh: `docker compose -f docker-compose.yml up -d`.
 
 - API: http://localhost:8000
-- Swagger dokumentácia: http://localhost:8000/docs
+- Swagger dokumentácia: http://localhost:8000/docs (len vo vývoji)
 - Health check: http://localhost:8000/health
 
 ## Testy
@@ -28,6 +28,12 @@ docker compose exec db psql -U carfleet -d postgres -c "CREATE DATABASE carfleet
 cd backend
 pip install -r requirements.txt -r requirements-dev.txt
 TEST_DATABASE_URL=postgresql+psycopg://carfleet:change-me@localhost:5432/carfleet_test pytest
+```
+
+Vo Windows PowerShelli sa premenná nastavuje inak:
+
+```powershell
+$env:TEST_DATABASE_URL="postgresql+psycopg://carfleet:change-me@localhost:5432/carfleet_test"; pytest
 ```
 
 CI (`.github/workflows/ci.yml`) na každý push a PR spúšťa lint (ruff), testy, kontrolu migrácií a build Docker image.
