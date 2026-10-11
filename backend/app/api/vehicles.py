@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -8,6 +8,9 @@ from app.models.vehicle import LICENSE_PLATE_UNIQUE, Vehicle
 from app.schemas.vehicle import VehicleCreate, VehiclePage, VehicleRead, VehicleUpdate
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
+
+# Najväčšia hodnota stĺpca INTEGER v PostgreSQL. Väčšie číslo by databáza odmietla chybou (500).
+PG_INT_MAX = 2_147_483_647
 
 
 def _get_or_404(db: Session, vehicle_id: int) -> Vehicle:
@@ -33,7 +36,7 @@ def _commit(db: Session) -> None:
 
 @router.get("", response_model=VehiclePage)
 def list_vehicles(
-    skip: int = Query(0, ge=0),
+    skip: int = Query(0, ge=0, le=PG_INT_MAX),
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
@@ -43,7 +46,7 @@ def list_vehicles(
 
 
 @router.get("/{vehicle_id}", response_model=VehicleRead)
-def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+def get_vehicle(vehicle_id: int = Path(ge=1, le=PG_INT_MAX), db: Session = Depends(get_db)):
     return _get_or_404(db, vehicle_id)
 
 
@@ -57,7 +60,11 @@ def create_vehicle(data: VehicleCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/{vehicle_id}", response_model=VehicleRead)
-def update_vehicle(vehicle_id: int, data: VehicleUpdate, db: Session = Depends(get_db)):
+def update_vehicle(
+    data: VehicleUpdate,
+    vehicle_id: int = Path(ge=1, le=PG_INT_MAX),
+    db: Session = Depends(get_db),
+):
     vehicle = _get_or_404(db, vehicle_id)
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(vehicle, field, value)
@@ -67,7 +74,7 @@ def update_vehicle(vehicle_id: int, data: VehicleUpdate, db: Session = Depends(g
 
 
 @router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+def delete_vehicle(vehicle_id: int = Path(ge=1, le=PG_INT_MAX), db: Session = Depends(get_db)):
     result = db.execute(delete(Vehicle).where(Vehicle.id == vehicle_id))
     db.commit()
     if result.rowcount == 0:

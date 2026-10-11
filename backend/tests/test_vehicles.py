@@ -79,9 +79,17 @@ def test_list_empty(client):
     assert client.get("/vehicles").json() == {"items": [], "total": 0, "skip": 0, "limit": 100}
 
 
-@pytest.mark.parametrize("params", [{"limit": 0}, {"limit": 101}, {"skip": -1}])
+@pytest.mark.parametrize("params", [{"limit": 0}, {"limit": 101}, {"skip": -1}, {"skip": 10**19}])
 def test_list_rejects_bad_pagination(client, params):
     assert client.get("/vehicles", params=params).status_code == 422
+
+
+@pytest.mark.parametrize("vehicle_id", [0, -1, 2**31, 10**19])
+def test_out_of_range_vehicle_id_is_rejected(client, vehicle_id):
+    url = f"/vehicles/{vehicle_id}"
+    assert client.get(url).status_code == 422
+    assert client.patch(url, json={"model": "Fabia"}).status_code == 422
+    assert client.delete(url).status_code == 422
 
 
 def test_partial_update(client, make_vehicle):
