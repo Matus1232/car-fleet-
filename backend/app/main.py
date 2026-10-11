@@ -25,18 +25,11 @@ app.add_middleware(
 app.include_router(vehicles.router)
 
 
-@app.get("/")
-def root():
-    return {"message": settings.app_name}
-
-
 @app.get("/health")
 def health(db: Session = Depends(get_db)):
     """Overí, že API beží a vie sa spojiť s databázou."""
     try:
         db.execute(text("SELECT 1"))
-    except SQLAlchemyError:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Databáza nie je dostupná"
-        )
+    except SQLAlchemyError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Database is unavailable") from exc
     return {"status": "ok", "database": "connected"}

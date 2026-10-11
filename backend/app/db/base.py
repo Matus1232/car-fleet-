@@ -1,4 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(DeclarativeBase):
-    pass
+    """Základná trieda pre všetky ORM modely."""

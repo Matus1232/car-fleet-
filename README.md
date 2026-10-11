@@ -11,6 +11,10 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Migrácie databázy (`alembic upgrade head`) sa spustia automaticky pri štarte API.
+`docker-compose.override.yml` (live reload, `ENVIRONMENT=development` z `.env`) sa načíta sám;
+produkčný beh: `docker compose -f docker-compose.yml up -d`.
+
 - API: http://localhost:8000
 - Swagger dokumentácia: http://localhost:8000/docs
 - Health check: http://localhost:8000/health
@@ -18,8 +22,8 @@ docker compose up --build
 ## Stav projektu
 
 - [x] Štruktúra projektu, Docker Compose, PostgreSQL
-- [ ] Databázový model a migrácie
-- [ ] CRUD endpointy
+- [x] Databázový model a migrácie
+- [x] CRUD endpointy pre vozidlá
 - [ ] Autentifikácia
 - [ ] Testy a CI
 - [ ] Frontend
