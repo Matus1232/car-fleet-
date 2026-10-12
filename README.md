@@ -24,19 +24,10 @@ produkčný beh: `docker compose -f docker-compose.yml up -d`.
 Testy bežia nad **samostatnou** databázou (tabuľky sa pri nich mažú), preto vyžadujú `TEST_DATABASE_URL`:
 
 ```bash
-docker compose exec db psql -U carfleet -d postgres -c "CREATE DATABASE carfleet_test"   # raz
-cd backend
-pip install -r requirements.txt -r requirements-dev.txt
-TEST_DATABASE_URL=postgresql+psycopg://carfleet:change-me@localhost:5432/carfleet_test pytest
+
 ```
 
 Vo Windows PowerShelli sa premenná nastavuje inak:
-
-```powershell
-$env:TEST_DATABASE_URL="postgresql+psycopg://carfleet:change-me@localhost:5432/carfleet_test"; pytest
-```
-
-CI (`.github/workflows/ci.yml`) na každý push a PR spúšťa lint (ruff), testy, kontrolu migrácií a build Docker image.
 
 ## Stav projektu
 
