@@ -6,8 +6,20 @@ Webová aplikácia na správu vozového parku: autá, servisná história a dôl
 
 ## Spustenie
 
+V koreni projektu vytvor súbor `.env` (do Gitu sa nedáva):
+
+```
+POSTGRES_USER=carfleet
+POSTGRES_PASSWORD=change-me
+POSTGRES_DB=carfleet
+DATABASE_URL=postgresql+psycopg://carfleet:change-me@localhost:5432/carfleet
+APP_NAME=Car Fleet Manager
+CORS_ORIGINS=http://localhost:5173
+SECRET_KEY=
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
 ```bash
-cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"   # výsledok vlož do .env ako SECRET_KEY
 docker compose up --build
 ```
