@@ -83,6 +83,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql+psycopg://ci:ci@localhost:5432/ci
+      SECRET_KEY: ci-only-secret-key-not-used-for-anything-real
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

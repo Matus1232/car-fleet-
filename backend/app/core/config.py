@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # .env v koreni projektu (config.py -> core -> app -> backend -> koreň). Cesta je odvodená
@@ -15,6 +16,10 @@ class Settings(BaseSettings):
     environment: str = "production"  # "development" zapína /docs a /openapi.json
     database_url: str  # povinné, bez predvolenej hodnoty
     cors_origins: str = ""  # zoznam povolených originov oddelený čiarkou
+    # Kľúč, ktorým sa podpisujú JWT tokeny. Kto ho pozná, vie vyrobiť token za hocikoho,
+    # preto je povinný a krátky (ľahko uhádnuteľný) kľúč aplikácia odmietne už pri štarte.
+    secret_key: str = Field(min_length=32)
+    access_token_expire_minutes: int = Field(default=30, ge=1)
 
     @property
     def cors_origin_list(self) -> list[str]:

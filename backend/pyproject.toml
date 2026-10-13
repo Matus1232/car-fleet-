@@ -10,7 +10,7 @@ select = ["E", "F", "I", "B", "UP", "S"]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "S105", "S106"]  # assert a testovacie heslá sú v testoch v poriadku
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

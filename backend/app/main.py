@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api import vehicles
+from app.api import auth, users, vehicles
 from app.core.config import settings
 from app.db.session import get_db
 
@@ -22,10 +22,12 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(vehicles.router)
 
 
-@app.get("/health")
+@app.get("/health")  # zámerne verejný: monitoring sa nemusí prihlasovať
 def health(db: Session = Depends(get_db)):
     """Overí, že API beží a vie sa spojiť s databázou."""
     try:
