@@ -1,4 +1,4 @@
-import type { User, VehiclePage } from './types'
+import type { User, Vehicle, VehicleInput, VehiclePage } from './types'
 
 // Adresa backendu. Pri nasadení ju budeme meniť, preto je na jednom mieste.
 const API_URL = 'http://localhost:8000'
@@ -44,9 +44,17 @@ async function request(path: string, token: string, options: RequestInit = {}): 
     throw new UnauthorizedError()
   }
   if (!response.ok) {
-    throw new Error(`Požiadavka zlyhala (chyba ${response.status}).`)
+    throw new Error(ERROR_MESSAGES[response.status] ?? `Požiadavka zlyhala (chyba ${response.status}).`)
   }
   return response
+}
+
+// Zrozumiteľné texty pre chyby, ktoré vracia backend (409 zatiaľ vzniká len pri duplicitnej ŠPZ).
+const ERROR_MESSAGES: Record<number, string> = {
+  403: 'Na túto akciu nemáš oprávnenie.',
+  404: 'Auto sa nenašlo, možno ho medzitým niekto zmazal.',
+  409: 'Auto s touto ŠPZ už existuje.',
+  422: 'Skontroluj zadané údaje.',
 }
 
 export async function getMe(token: string): Promise<User> {
@@ -56,6 +64,15 @@ export async function getMe(token: string): Promise<User> {
 
 export async function getVehicles(token: string): Promise<VehiclePage> {
   const response = await request('/vehicles', token)
+  return response.json()
+}
+
+export async function createVehicle(token: string, data: VehicleInput): Promise<Vehicle> {
+  const response = await request('/vehicles', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
   return response.json()
 }
 

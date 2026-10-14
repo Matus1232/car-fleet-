@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { deleteVehicle, errorMessage, getVehicles, UnauthorizedError } from '../api'
-import type { Vehicle, VehiclePage } from '../types'
+import { createVehicle, deleteVehicle, errorMessage, getVehicles, UnauthorizedError } from '../api'
+import type { Vehicle, VehicleInput, VehiclePage } from '../types'
+import VehicleForm from './VehicleForm'
 import VehicleList from './VehicleList'
 
 type Props = {
@@ -13,6 +14,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [page, setPage] = useState<VehiclePage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
 
   // Spustí sa po prvom zobrazení komponentu a potom znova vždy, keď sa zmení token.
   useEffect(() => {
@@ -56,6 +58,18 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     }
   }
 
+  // Chybu z formulára necháme "prebublať" ďalej (throw), aby ju VehicleForm mohol zobraziť.
+  async function handleCreate(data: VehicleInput) {
+    try {
+      const created = await createVehicle(token, data)
+      setPage((prev) => prev && { ...prev, items: [...prev.items, created], total: prev.total + 1 })
+      setShowForm(false)
+    } catch (err) {
+      if (err instanceof UnauthorizedError) onUnauthorized()
+      throw err
+    }
+  }
+
   if (error !== null) {
     return <p className="error">{error}</p>
   }
@@ -65,7 +79,11 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
 
   return (
     <>
-      <p>Počet áut: {page.total}</p>
+      <div className="toolbar">
+        <p>Počet áut: {page.total}</p>
+        {isAdmin && !showForm && <button onClick={() => setShowForm(true)}>Pridať auto</button>}
+      </div>
+      {showForm && <VehicleForm onSave={handleCreate} onCancel={() => setShowForm(false)} />}
       {deleteError && <p className="error">{deleteError}</p>}
       <VehicleList vehicles={page.items} onDelete={isAdmin ? handleDelete : undefined} />
     </>

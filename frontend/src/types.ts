@@ -7,6 +7,13 @@ export type Vehicle = {
   created_at: string // JSON nepozná dátum, príde ako text, napr. "2026-10-14T08:30:00Z"
 }
 
+// Čo posielame pri vytváraní auta (zodpovedá VehicleCreate). id a created_at doplní backend.
+export type VehicleInput = {
+  brand: string
+  model: string
+  license_plate: string
+}
+
 // Prihlásený používateľ z GET /auth/me (zodpovedá UserRead).
 export type User = {
   id: number

@@ -33,6 +33,7 @@ form {
   flex-direction: column;
   gap: 12px;
   max-width: 320px;
+  margin-bottom: 24px;
 }
 
 label {
@@ -60,6 +61,17 @@ button.secondary {
   padding: 4px 12px;
   color: #000;
   background: #fff;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
 }
 
 .user {
