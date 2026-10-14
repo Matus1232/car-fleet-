@@ -56,6 +56,18 @@ button {
   cursor: pointer;
 }
 
+button.secondary {
+  padding: 4px 12px;
+  color: #000;
+  background: #fff;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: default;

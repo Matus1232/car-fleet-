@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { login } from '../api'
+import { errorMessage, login } from '../api'
 
 type Props = {
   onLogin: (token: string) => void
@@ -20,12 +20,7 @@ function LoginForm({ onLogin }: Props) {
       const token = await login(email, password)
       onLogin(token)
     } catch (err) {
-      // fetch hodí TypeError, keď sa na server vôbec nedá pripojiť (napr. nebeží Docker).
-      if (err instanceof TypeError) {
-        setError('Server je nedostupný.')
-      } else if (err instanceof Error) {
-        setError(err.message)
-      }
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }

@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { getVehicles, UnauthorizedError } from '../api'
-import type { VehiclePage } from '../types'
+import { deleteVehicle, errorMessage, getVehicles, UnauthorizedError } from '../api'
+import type { Vehicle, VehiclePage } from '../types'
 import VehicleList from './VehicleList'
 
 type Props = {
   token: string
+  isAdmin: boolean
   onUnauthorized: () => void
 }
 
-function VehiclesPage({ token, onUnauthorized }: Props) {
+function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [page, setPage] = useState<VehiclePage | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Spustí sa po prvom zobrazení komponentu a potom znova vždy, keď sa zmení token.
   useEffect(() => {
@@ -26,7 +28,7 @@ function VehiclesPage({ token, onUnauthorized }: Props) {
         if (err instanceof UnauthorizedError) {
           onUnauthorized() // token vypršal alebo je neplatný -> späť na prihlásenie
         } else {
-          setError(err instanceof TypeError ? 'Server je nedostupný.' : err.message)
+          setError(errorMessage(err))
         }
       })
 
@@ -34,6 +36,25 @@ function VehiclesPage({ token, onUnauthorized }: Props) {
       ignore = true
     }
   }, [token, onUnauthorized])
+
+  async function handleDelete(vehicle: Vehicle) {
+    if (!confirm(`Naozaj zmazať auto ${vehicle.license_plate}?`)) return
+
+    setDeleteError(null)
+    try {
+      await deleteVehicle(token, vehicle.id)
+      // Auto vyhodíme z už načítaného zoznamu, netreba znova sťahovať všetky autá.
+      setPage((prev) =>
+        prev && { ...prev, items: prev.items.filter((v) => v.id !== vehicle.id), total: prev.total - 1 },
+      )
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        onUnauthorized()
+      } else {
+        setDeleteError(errorMessage(err))
+      }
+    }
+  }
 
   if (error !== null) {
     return <p className="error">{error}</p>
@@ -45,7 +66,8 @@ function VehiclesPage({ token, onUnauthorized }: Props) {
   return (
     <>
       <p>Počet áut: {page.total}</p>
-      <VehicleList vehicles={page.items} />
+      {deleteError && <p className="error">{deleteError}</p>}
+      <VehicleList vehicles={page.items} onDelete={isAdmin ? handleDelete : undefined} />
     </>
   )
 }

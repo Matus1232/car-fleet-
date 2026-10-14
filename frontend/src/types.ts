@@ -7,6 +7,14 @@ export type Vehicle = {
   created_at: string // JSON nepozná dátum, príde ako text, napr. "2026-10-14T08:30:00Z"
 }
 
+// Prihlásený používateľ z GET /auth/me (zodpovedá UserRead).
+export type User = {
+  id: number
+  email: string
+  role: 'admin' | 'driver' // rola môže byť len jeden z týchto dvoch textov
+  created_at: string
+}
+
 // Odpoveď z GET /vehicles (zodpovedá VehiclePage): jedna "stránka" áut + celkový počet.
 export type VehiclePage = {
   items: Vehicle[]
