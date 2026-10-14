@@ -1,3 +1,5 @@
+import type { VehiclePage } from './types'
+
 // Adresa backendu. Pri nasadení ju budeme meniť, preto je na jednom mieste.
 const API_URL = 'http://localhost:8000'
 
@@ -18,4 +20,20 @@ export async function login(email: string, password: string): Promise<string> {
 
   const data: { access_token: string } = await response.json()
   return data.access_token
+}
+
+// Načíta prvú stránku áut. Token posielame v hlavičke, presne ako to čaká get_current_user.
+export async function getVehicles(token: string): Promise<VehiclePage> {
+  const response = await fetch(`${API_URL}/vehicles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (response.status === 401) {
+    throw new Error('Prihlásenie vypršalo, obnov stránku a prihlás sa znova.')
+  }
+  if (!response.ok) {
+    throw new Error(`Načítanie áut zlyhalo (chyba ${response.status}).`)
+  }
+
+  return response.json()
 }
