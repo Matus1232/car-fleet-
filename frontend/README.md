@@ -1,32 +1,30 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript aplikácia postavená na Vite. Ako ju spustiť, je v [hlavnom README](../README.md#3-frontend).
 
-Currently, two official plugins are available:
+## Súbory v `src/`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+main.tsx                  vstupný bod: vykreslí App do <div id="root"> v index.html
+App.tsx                   token a prihlásený používateľ, hlavička, stránky (React Router)
+api.ts                    všetka komunikácia s backendom (fetch, token v hlavičke, texty chýb)
+types.ts                  TypeScript typy zodpovedajúce schémam backendu (Vehicle, User, ...)
+index.css                 všetky štýly
+components/
+  LoginForm.tsx           prihlasovací formulár
+  VehiclesPage.tsx        stránka s autami: načítanie, stránkovanie, pridanie, úprava, mazanie
+  VehicleList.tsx         tabuľka áut (len zobrazuje, dáta dostane cez props)
+  VehicleForm.tsx         formulár na pridanie aj úpravu auta
+  Pagination.tsx          tlačidlá Predchádzajúca / Ďalšia
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Stránky
+
+| Adresa | Čo zobrazí |
+|---|---|
+| `/login` | prihlásenie (prihláseného presmeruje na `/vehicles`) |
+| `/vehicles` | zoznam áut (neprihláseného presmeruje na `/login`) |
+| hocičo iné | presmeruje na `/vehicles` |
+
+Tlačidlá na pridanie, úpravu a mazanie vidí len admin. Je to len pohodlie pre používateľa,
+skutočnú kontrolu oprávnení robí backend (vodičovi vráti `403`).
