@@ -18,6 +18,24 @@ components/
   Pagination.tsx          tlačidlá Predchádzajúca / Ďalšia
 ```
 
+## Komponenty
+
+```mermaid
+flowchart TD
+    main["main.tsx"] --> App
+    App --> LoginForm
+    App --> VehiclesPage
+    VehiclesPage --> VehicleForm
+    VehiclesPage --> VehicleList
+    VehiclesPage --> Pagination
+    App -. "api.ts" .-> API["Backend API"]
+    LoginForm -. "api.ts" .-> API
+    VehiclesPage -. "api.ts" .-> API
+```
+
+Dáta tečú zhora nadol cez props, udalosti idú hore cez funkcie v props (`onLogin`, `onSave`, `onDelete`, ...).
+Token a prihláseného používateľa drží `App`, autá a stránkovanie `VehiclesPage`.
+
 ## Stránky
 
 | Adresa | Čo zobrazí |
