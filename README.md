@@ -7,6 +7,16 @@ Plánované rozšírenia: servisná história a dôležité termíny (STK, EK, p
 
 **Tech stack:** Python, FastAPI, PostgreSQL, SQLAlchemy, Alembic, React, TypeScript, Vite, Docker, GitHub Actions
 
+## Ukážka
+
+Zoznam áut (prihlásený admin):
+
+![Zoznam áut](docs/screenshots/vehicles-admin.png)
+
+Pridanie auta:
+
+![Formulár na pridanie auta](docs/screenshots/vehicle-form.png)
+
 ## Štruktúra projektu
 
 ```
