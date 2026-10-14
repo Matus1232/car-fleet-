@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # preto je povinný a krátky (ľahko uhádnuteľný) kľúč aplikácia odmietne už pri štarte.
     secret_key: str = Field(min_length=32)
     access_token_expire_minutes: int = Field(default=30, ge=1)
+    # Ochrana prihlásenia: koľko neúspešných pokusov z jednej IP adresy je povolených
+    # za časové okno. Potom /auth/token vracia 429, kým najstarší pokus z okna nevypadne.
+    login_max_attempts: int = Field(default=10, ge=1)
+    login_window_seconds: int = Field(default=15 * 60, ge=1)
 
     @property
     def cors_origin_list(self) -> list[str]:
