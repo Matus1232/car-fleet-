@@ -50,6 +50,11 @@ docker compose exec api python -m app.cli create-admin --email admin@firma.sk
 Prihlásenie: `POST /auth/token` (formulár `username` = email, `password`) vráti `access_token`.
 `GET /auth/me` vráti prihláseného používateľa. V `/docs` stačí kliknúť na **Authorize**.
 
+Po 10 neúspešných pokusoch o prihlásenie z jednej IP adresy vracia `/auth/token` počas 15 minút
+`429 Too Many Requests` (hlavička `Retry-After` hovorí, o koľko sekúnd to skúsiť znova). Úspešné
+prihlásenia sa nepočítajú. Nastavuje sa cez `LOGIN_MAX_ATTEMPTS` a `LOGIN_WINDOW_SECONDS`.
+Počítadlo je v pamäti procesu, takže sa vynuluje reštartom API.
+
 ## Testy
 
 Testy bežia nad **samostatnou** databázou (tabuľky sa pri nich mažú), preto vyžadujú `TEST_DATABASE_URL`:
