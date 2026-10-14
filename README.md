@@ -16,6 +16,82 @@ docker-compose.yml           databáza + API
 docker-compose.override.yml  vývojové nastavenie (načíta sa automaticky)
 ```
 
+## Architektúra
+
+```mermaid
+flowchart LR
+    subgraph browser["Prehliadač"]
+        F["React aplikácia"]
+    end
+    V["Vite dev server<br>:5173"] -. "HTML, JS, CSS" .-> F
+    F -- "fetch + JWT token<br>JSON" --> A
+    subgraph docker["Docker Compose"]
+        A["FastAPI<br>:8000"] -- "SQLAlchemy" --> D[("PostgreSQL<br>:5432")]
+    end
+```
+
+Frontend a backend sú dva samostatné programy. Vite pošle prehliadaču súbory aplikácie, tá potom
+komunikuje už len s API: posiela požiadavky s tokenom a dostáva späť JSON.
+
+### Prihlásenie
+
+```mermaid
+sequenceDiagram
+    actor U as Používateľ
+    participant F as Frontend
+    participant A as API
+    participant D as Databáza
+
+    U->>F: e-mail a heslo
+    F->>A: POST /auth/token
+    A->>D: nájdi používateľa podľa e-mailu
+    A->>A: over heslo voči Argon2 hashu
+    A-->>F: access_token (JWT)
+    F->>F: ulož token do localStorage
+    F->>A: GET /auth/me (Authorization: Bearer token)
+    A-->>F: e-mail a rola
+    F->>A: GET /vehicles?skip=0&limit=10
+    A-->>F: autá a celkový počet
+```
+
+### Overenie každej požiadavky
+
+```mermaid
+flowchart TD
+    R["Požiadavka na /vehicles"] --> T{"Platný token?<br>(get_current_user)"}
+    T -- nie --> E401["401 Unauthorized<br>frontend odhlási používateľa"]
+    T -- áno --> W{"Zápis?<br>POST, PATCH, DELETE"}
+    W -- nie --> OK["200 OK"]
+    W -- áno --> AD{"Rola admin?<br>(require_admin)"}
+    AD -- nie --> E403["403 Forbidden"]
+    AD -- áno --> OK2["Zmena sa vykoná"]
+```
+
+**Autentifikácia** (kto si) robí `get_current_user`, **autorizáciu** (čo smieš) `require_admin`
+v `backend/app/api/deps.py`.
+
+### Databáza
+
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string email UK
+        string hashed_password
+        string role "admin alebo driver"
+        datetime created_at
+    }
+    vehicles {
+        int id PK
+        string brand
+        string model
+        string license_plate UK "napr. BA123AB"
+        datetime created_at
+    }
+```
+
+Tabuľky zatiaľ nie sú prepojené: autá nepatria konkrétnemu vodičovi.
+
 ## Spustenie
 
 Potrebuješ [Docker Desktop](https://www.docker.com/products/docker-desktop/) (backend a databáza)
