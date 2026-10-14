@@ -4,14 +4,16 @@ import { errorMessage } from '../api'
 import type { VehicleInput } from '../types'
 
 type Props = {
+  initial: VehicleInput | null // null = nové auto, inak upravujeme existujúce
   onSave: (data: VehicleInput) => Promise<void>
   onCancel: () => void
 }
 
-function VehicleForm({ onSave, onCancel }: Props) {
-  const [brand, setBrand] = useState('')
-  const [model, setModel] = useState('')
-  const [licensePlate, setLicensePlate] = useState('')
+function VehicleForm({ initial, onSave, onCancel }: Props) {
+  // Počiatočná hodnota sa použije len pri prvom zobrazení formulára.
+  const [brand, setBrand] = useState(initial?.brand ?? '')
+  const [model, setModel] = useState(initial?.model ?? '')
+  const [licensePlate, setLicensePlate] = useState(initial?.license_plate ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -30,7 +32,7 @@ function VehicleForm({ onSave, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Nové auto</h2>
+      <h2>{initial === null ? 'Nové auto' : 'Upraviť auto'}</h2>
 
       {/* required, maxLength a pattern skontroluje prehliadač ešte pred odoslaním. */}
       <label>

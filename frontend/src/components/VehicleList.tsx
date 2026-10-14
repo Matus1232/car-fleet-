@@ -2,13 +2,17 @@ import type { Vehicle } from '../types'
 
 type Props = {
   vehicles: Vehicle[]
-  onDelete?: (vehicle: Vehicle) => void // otáznik = nepovinné; keď chýba, stĺpec s tlačidlom sa neukáže
+  // Otáznik = nepovinné. Keď nedostaneme ani jedno, stĺpec s tlačidlami sa neukáže.
+  onEdit?: (vehicle: Vehicle) => void
+  onDelete?: (vehicle: Vehicle) => void
 }
 
-function VehicleList({ vehicles, onDelete }: Props) {
+function VehicleList({ vehicles, onEdit, onDelete }: Props) {
   if (vehicles.length === 0) {
     return <p>Zatiaľ tu nie sú žiadne autá.</p>
   }
+
+  const showActions = onEdit !== undefined || onDelete !== undefined
 
   return (
     <table>
@@ -18,7 +22,7 @@ function VehicleList({ vehicles, onDelete }: Props) {
           <th>Značka</th>
           <th>Model</th>
           <th>Pridané</th>
-          {onDelete && <th></th>}
+          {showActions && <th></th>}
         </tr>
       </thead>
       <tbody>
@@ -28,11 +32,20 @@ function VehicleList({ vehicles, onDelete }: Props) {
             <td>{vehicle.brand}</td>
             <td>{vehicle.model}</td>
             <td>{new Date(vehicle.created_at).toLocaleDateString('sk-SK')}</td>
-            {onDelete && (
+            {showActions && (
               <td>
-                <button className="secondary" onClick={() => onDelete(vehicle)}>
-                  Zmazať
-                </button>
+                <div className="actions">
+                  {onEdit && (
+                    <button className="secondary" onClick={() => onEdit(vehicle)}>
+                      Upraviť
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button className="secondary" onClick={() => onDelete(vehicle)}>
+                      Zmazať
+                    </button>
+                  )}
+                </div>
               </td>
             )}
           </tr>

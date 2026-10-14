@@ -76,6 +76,16 @@ export async function createVehicle(token: string, data: VehicleInput): Promise<
   return response.json()
 }
 
+// PATCH dovoľuje poslať len zmenené polia, my pre jednoduchosť posielame vždy všetky tri.
+export async function updateVehicle(token: string, id: number, data: VehicleInput): Promise<Vehicle> {
+  const response = await request(`/vehicles/${id}`, token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
 // DELETE vracia 204 No Content, takže z odpovede nič nečítame.
 export async function deleteVehicle(token: string, id: number): Promise<void> {
   await request(`/vehicles/${id}`, token, { method: 'DELETE' })

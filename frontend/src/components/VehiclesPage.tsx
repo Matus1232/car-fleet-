@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createVehicle, deleteVehicle, errorMessage, getVehicles, UnauthorizedError } from '../api'
+import { createVehicle, deleteVehicle, errorMessage, getVehicles, UnauthorizedError, updateVehicle } from '../api'
 import type { Vehicle, VehicleInput, VehiclePage } from '../types'
 import VehicleForm from './VehicleForm'
 import VehicleList from './VehicleList'
@@ -15,6 +15,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Vehicle | null>(null) // null = formulár pridáva nové auto
 
   // Spustí sa po prvom zobrazení komponentu a potom znova vždy, keď sa zmení token.
   useEffect(() => {
@@ -49,6 +50,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
       setPage((prev) =>
         prev && { ...prev, items: prev.items.filter((v) => v.id !== vehicle.id), total: prev.total - 1 },
       )
+      if (editing?.id === vehicle.id) closeForm() // zmazané auto už nemá zmysel upravovať
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized()
@@ -58,12 +60,33 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     }
   }
 
+  function openCreate() {
+    setEditing(null)
+    setShowForm(true)
+  }
+
+  function openEdit(vehicle: Vehicle) {
+    setEditing(vehicle)
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditing(null)
+  }
+
   // Chybu z formulára necháme "prebublať" ďalej (throw), aby ju VehicleForm mohol zobraziť.
-  async function handleCreate(data: VehicleInput) {
+  async function handleSave(data: VehicleInput) {
     try {
-      const created = await createVehicle(token, data)
-      setPage((prev) => prev && { ...prev, items: [...prev.items, created], total: prev.total + 1 })
-      setShowForm(false)
+      if (editing === null) {
+        const created = await createVehicle(token, data)
+        setPage((prev) => prev && { ...prev, items: [...prev.items, created], total: prev.total + 1 })
+      } else {
+        const updated = await updateVehicle(token, editing.id, data)
+        // Upravené auto vymeníme na jeho mieste, ostatné necháme tak.
+        setPage((prev) => prev && { ...prev, items: prev.items.map((v) => (v.id === updated.id ? updated : v)) })
+      }
+      closeForm()
     } catch (err) {
       if (err instanceof UnauthorizedError) onUnauthorized()
       throw err
@@ -81,11 +104,18 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     <>
       <div className="toolbar">
         <p>Počet áut: {page.total}</p>
-        {isAdmin && !showForm && <button onClick={() => setShowForm(true)}>Pridať auto</button>}
+        {isAdmin && !showForm && <button onClick={openCreate}>Pridať auto</button>}
       </div>
-      {showForm && <VehicleForm onSave={handleCreate} onCancel={() => setShowForm(false)} />}
+      {showForm && (
+        // key: pri prepnutí na iné auto React vytvorí formulár nanovo, s hodnotami nového auta.
+        <VehicleForm key={editing?.id ?? 'new'} initial={editing} onSave={handleSave} onCancel={closeForm} />
+      )}
       {deleteError && <p className="error">{deleteError}</p>}
-      <VehicleList vehicles={page.items} onDelete={isAdmin ? handleDelete : undefined} />
+      <VehicleList
+        vehicles={page.items}
+        onEdit={isAdmin ? openEdit : undefined}
+        onDelete={isAdmin ? handleDelete : undefined}
+      />
     </>
   )
 }
