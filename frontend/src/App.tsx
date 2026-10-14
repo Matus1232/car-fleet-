@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import LoginForm from './components/LoginForm'
 import VehicleList from './components/VehicleList'
 import type { Vehicle } from './types'
 
@@ -9,10 +11,17 @@ const sampleVehicles: Vehicle[] = [
 ]
 
 function App() {
+  // null = nikto nie je prihlásený. Token je zatiaľ len v pamäti, po obnovení stránky zmizne.
+  const [token, setToken] = useState<string | null>(null)
+
   return (
     <main>
       <h1>Car Fleet Manager</h1>
-      <VehicleList vehicles={sampleVehicles} />
+      {token === null ? (
+        <LoginForm onLogin={setToken} />
+      ) : (
+        <VehicleList vehicles={sampleVehicles} />
+      )}
     </main>
   )
 }
