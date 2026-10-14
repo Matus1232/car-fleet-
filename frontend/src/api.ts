@@ -3,6 +3,9 @@ import type { VehiclePage } from './types'
 // Adresa backendu. Pri nasadení ju budeme meniť, preto je na jednom mieste.
 const API_URL = 'http://localhost:8000'
 
+// Vlastný typ chyby pre 401: podľa neho stránka pozná, že treba používateľa odhlásiť.
+export class UnauthorizedError extends Error {}
+
 // Pošle email a heslo na POST /auth/token a vráti JWT token.
 export async function login(email: string, password: string): Promise<string> {
   const response = await fetch(`${API_URL}/auth/token`, {
@@ -29,7 +32,7 @@ export async function getVehicles(token: string): Promise<VehiclePage> {
   })
 
   if (response.status === 401) {
-    throw new Error('Prihlásenie vypršalo, obnov stránku a prihlás sa znova.')
+    throw new UnauthorizedError()
   }
   if (!response.ok) {
     throw new Error(`Načítanie áut zlyhalo (chyba ${response.status}).`)

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { getVehicles } from '../api'
+import { getVehicles, UnauthorizedError } from '../api'
 import type { VehiclePage } from '../types'
 import VehicleList from './VehicleList'
 
 type Props = {
   token: string
+  onUnauthorized: () => void
 }
 
-function VehiclesPage({ token }: Props) {
+function VehiclesPage({ token, onUnauthorized }: Props) {
   const [page, setPage] = useState<VehiclePage | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,13 +23,17 @@ function VehiclesPage({ token }: Props) {
       })
       .catch((err) => {
         if (ignore) return
-        setError(err instanceof TypeError ? 'Server je nedostupný.' : err.message)
+        if (err instanceof UnauthorizedError) {
+          onUnauthorized() // token vypršal alebo je neplatný -> späť na prihlásenie
+        } else {
+          setError(err instanceof TypeError ? 'Server je nedostupný.' : err.message)
+        }
       })
 
     return () => {
       ignore = true
     }
-  }, [token])
+  }, [token, onUnauthorized])
 
   if (error !== null) {
     return <p className="error">{error}</p>
