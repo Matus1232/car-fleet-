@@ -22,7 +22,8 @@ Pridanie auta:
 ```
 backend/    FastAPI aplikácia, databázové modely, migrácie (Alembic), testy
 frontend/   React aplikácia (Vite + TypeScript)
-docker-compose.yml           databáza + API
+docs/       screenshoty
+docker-compose.yml           databáza + API + frontend
 docker-compose.override.yml  vývojové nastavenie (načíta sa automaticky)
 ```
 
@@ -33,15 +34,16 @@ flowchart LR
     subgraph browser["Prehliadač"]
         F["React aplikácia"]
     end
-    V["Vite dev server<br>:5173"] -. "HTML, JS, CSS" .-> F
     F -- "fetch + JWT token<br>JSON" --> A
     subgraph docker["Docker Compose"]
-        A["FastAPI<br>:8000"] -- "SQLAlchemy" --> D[("PostgreSQL<br>:5432")]
+        W["web: Vite / nginx<br>:5173"]
+        A["api: FastAPI<br>:8000"] -- "SQLAlchemy" --> D[("db: PostgreSQL<br>:5432")]
     end
+    W -. "HTML, JS, CSS" .-> F
 ```
 
-Frontend a backend sú dva samostatné programy. Vite pošle prehliadaču súbory aplikácie, tá potom
-komunikuje už len s API: posiela požiadavky s tokenom a dostáva späť JSON.
+Frontend a backend sú dva samostatné programy. Kontajner `web` pošle prehliadaču súbory aplikácie,
+tá potom komunikuje už len s API: posiela požiadavky s tokenom a dostáva späť JSON.
 
 ### Prihlásenie
 
@@ -104,10 +106,10 @@ Tabuľky zatiaľ nie sú prepojené: autá nepatria konkrétnemu vodičovi.
 
 ## Spustenie
 
-Potrebuješ [Docker Desktop](https://www.docker.com/products/docker-desktop/) (backend a databáza)
-a [Node.js](https://nodejs.org) vo verzii LTS (frontend).
+Stačí [Docker Desktop](https://www.docker.com/products/docker-desktop/). Databáza, API aj frontend
+sa spustia jedným príkazom.
 
-### 1. Backend a databáza
+### 1. Nastavenie a spustenie
 
 V koreni projektu vytvor súbor `.env` (do Gitu sa nedáva):
 
@@ -128,9 +130,15 @@ docker compose up --build
 ```
 
 Migrácie databázy (`alembic upgrade head`) sa spustia automaticky pri štarte API.
-`docker-compose.override.yml` (live reload, `ENVIRONMENT=development`, teda zapnutý `/docs`) sa načíta sám;
-produkčný beh: `docker compose -f docker-compose.yml up -d`.
 
+| Režim | Príkaz | Frontend | API |
+|---|---|---|---|
+| vývoj | `docker compose up` | Vite dev server, zmena v kóde sa hneď prejaví v prehliadači | live reload, zapnutý `/docs` |
+| produkcia | `docker compose -f docker-compose.yml up -d` | hotový build, posiela ho nginx | bez reloadu, `/docs` vypnuté |
+
+Vo vývoji sa `docker-compose.override.yml` načíta automaticky.
+
+- Aplikácia: http://localhost:5173
 - API: http://localhost:8000
 - Swagger dokumentácia: http://localhost:8000/docs (len vo vývoji)
 - Health check: http://localhost:8000/health
@@ -143,17 +151,7 @@ Verejná registrácia nie je. Prvého admina vytvoríš z terminálu (heslo sa v
 docker compose exec api python -m app.cli create-admin --email admin@firma.sk
 ```
 
-### 3. Frontend
-
-V druhom termináli (backend musí bežať):
-
-```bash
-cd frontend
-npm install        # len prvýkrát a po zmene package.json
-npm run dev
-```
-
-Aplikácia beží na http://localhost:5173. Táto adresa musí byť v `CORS_ORIGINS` v `.env`,
+Potom sa prihlás na http://localhost:5173. Táto adresa musí byť v `CORS_ORIGINS` v `.env`,
 inak prehliadač požiadavky na API zablokuje.
 
 ## Čo aplikácia vie
@@ -196,12 +194,15 @@ Frontend je samostatná aplikácia, ktorá s backendom komunikuje cez `fetch`.
 Prihlasovací token si ukladá v `localStorage`, takže obnovenie stránky nikoho neodhlási;
 keď token vyprší, používateľa automaticky odhlási.
 
-Adresa API je zatiaľ napevno v `frontend/src/api.ts` (`http://localhost:8000`).
+Adresa API je napevno v `frontend/src/api.ts` (`http://localhost:8000`). Prehliadač volá API priamo,
+aj keď frontend beží v Dockeri.
 
-Príkazy (v priečinku `frontend`):
+Frontend sa dá spustiť aj bez Dockeru, potrebuješ na to [Node.js](https://nodejs.org) vo verzii LTS.
+Najprv zastav kontajner (`docker compose stop web`), lebo obsadzuje port 5173. Príkazy v priečinku `frontend`:
 
 | Príkaz | Čo robí |
 |---|---|
+| `npm install` | nainštaluje knižnice (prvýkrát a po zmene `package.json`) |
 | `npm run dev` | vývojový server s okamžitým obnovovaním pri zmene kódu |
 | `npm run build` | kontrola typov (TypeScript) a produkčný build do `dist/` |
 | `npm run lint` | kontrola kódu (oxlint) |

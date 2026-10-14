@@ -1,6 +1,6 @@
 import type { User, Vehicle, VehicleInput, VehiclePage } from './types'
 
-// Adresa backendu. Pri nasadení ju budeme meniť, preto je na jednom mieste.
+// Adresa backendu. Prehliadač ju volá priamo, aj keď frontend beží v Dockeri (port 8000 je zverejnený).
 const API_URL = 'http://localhost:8000'
 
 // Vlastný typ chyby pre 401: podľa neho stránka pozná, že treba používateľa odhlásiť.
