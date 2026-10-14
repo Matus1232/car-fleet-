@@ -1,32 +1,76 @@
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
+  color: #000;
+  background: #fff;
+}
+
+main,
+.header-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px;
 }
 
 main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 16px;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
+/* Sivý pás cez celú šírku okna, obsah v ňom je zarovnaný s <main>. */
 header {
+  background: #e6e6e6;
+  border-bottom: 1px solid #ccc;
+}
+
+.header-inner {
   display: flex;
+  flex-wrap: wrap; /* na úzkej obrazovke sa tlačidlo zalomí pod nadpis */
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
+h1 {
+  margin: 16px 0;
+  font-size: 1.75rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+/* Tabuľka */
+
+.table-wrap {
+  overflow-x: auto; /* na mobile sa tabuľka posúva do strany, stránka nie */
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
+  background: #e8edf2; /* sivomodrá */
 }
 
 th,
 td {
   padding: 8px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #c9d3dd;
   text-align: left;
+  white-space: nowrap;
 }
+
+th {
+  background: #d3dce5; /* hlavička o odtieň tmavšia */
+  border-bottom: 2px solid #000;
+}
+
+td button {
+  padding: 4px 12px;
+}
+
+/* Formuláre */
 
 form {
   display: flex;
@@ -46,7 +90,15 @@ input {
   padding: 8px;
   font: inherit;
   border: 1px solid #000;
+  border-radius: 0;
 }
+
+input:focus {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+}
+
+/* Tlačidlá: čierne, pri prejdení myšou sa farby vymenia */
 
 button {
   padding: 8px 16px;
@@ -57,16 +109,38 @@ button {
   cursor: pointer;
 }
 
-button.secondary {
-  padding: 4px 12px;
+button:hover:not(:disabled) {
   color: #000;
   background: #fff;
 }
+
+button.secondary {
+  color: #000;
+  background: #fff;
+}
+
+button.secondary:hover:not(:disabled) {
+  color: #fff;
+  background: #000;
+}
+
+button:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Rozloženie */
 
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .actions {
@@ -80,14 +154,21 @@ button.secondary {
   gap: 12px;
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .error {
-  margin: 0;
+  margin: 0 0 16px;
   padding: 8px;
   font-weight: bold;
-  border: 1px solid #000;
+  border: 2px solid #000;
+}
+
+.error p {
+  margin: 0 0 8px;
 }

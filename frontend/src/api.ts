@@ -62,8 +62,10 @@ export async function getMe(token: string): Promise<User> {
   return response.json()
 }
 
-export async function getVehicles(token: string): Promise<VehiclePage> {
-  const response = await request('/vehicles', token)
+// skip = koľko áut preskočiť, limit = koľko ich vrátiť (backend dovolí najviac 100).
+export async function getVehicles(token: string, skip: number, limit: number): Promise<VehiclePage> {
+  const params = new URLSearchParams({ skip: String(skip), limit: String(limit) })
+  const response = await request(`/vehicles?${params}`, token)
   return response.json()
 }
 

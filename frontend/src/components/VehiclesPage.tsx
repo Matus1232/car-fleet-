@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { createVehicle, deleteVehicle, errorMessage, getVehicles, UnauthorizedError, updateVehicle } from '../api'
 import type { Vehicle, VehicleInput, VehiclePage } from '../types'
+import Pagination from './Pagination'
 import VehicleForm from './VehicleForm'
 import VehicleList from './VehicleList'
+
+const PAGE_SIZE = 10
 
 type Props = {
   token: string
@@ -16,13 +19,16 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Vehicle | null>(null) // null = formulár pridáva nové auto
+  const [skip, setSkip] = useState(0)
+  // Počítadlo, ktoré len zvyšujeme. Je v závislostiach useEffect, takže jeho zmena = načítaj znova.
+  const [reloadCount, setReloadCount] = useState(0)
 
-  // Spustí sa po prvom zobrazení komponentu a potom znova vždy, keď sa zmení token.
+  // Spustí sa po prvom zobrazení a potom vždy, keď sa zmení token, strana alebo reloadCount.
   useEffect(() => {
     // Ak komponent zmizne skôr, než príde odpoveď, výsledok už nechceme zapisovať do state.
     let ignore = false
 
-    getVehicles(token)
+    getVehicles(token, skip, PAGE_SIZE)
       .then((data) => {
         if (!ignore) setPage(data)
       })
@@ -38,7 +44,16 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     return () => {
       ignore = true
     }
-  }, [token, onUnauthorized])
+  }, [token, skip, reloadCount, onUnauthorized])
+
+  function reload() {
+    setReloadCount((count) => count + 1)
+  }
+
+  function retry() {
+    setError(null)
+    reload()
+  }
 
   async function handleDelete(vehicle: Vehicle) {
     if (!confirm(`Naozaj zmazať auto ${vehicle.license_plate}?`)) return
@@ -46,11 +61,13 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     setDeleteError(null)
     try {
       await deleteVehicle(token, vehicle.id)
-      // Auto vyhodíme z už načítaného zoznamu, netreba znova sťahovať všetky autá.
-      setPage((prev) =>
-        prev && { ...prev, items: prev.items.filter((v) => v.id !== vehicle.id), total: prev.total - 1 },
-      )
       if (editing?.id === vehicle.id) closeForm() // zmazané auto už nemá zmysel upravovať
+      // Bolo to posledné auto na strane? Vráť sa o stranu späť, inak načítaj tú istú znova.
+      if (page !== null && page.items.length === 1 && skip > 0) {
+        setSkip(skip - PAGE_SIZE)
+      } else {
+        reload()
+      }
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized()
@@ -79,8 +96,11 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   async function handleSave(data: VehicleInput) {
     try {
       if (editing === null) {
-        const created = await createVehicle(token, data)
-        setPage((prev) => prev && { ...prev, items: [...prev.items, created], total: prev.total + 1 })
+        await createVehicle(token, data)
+        // Nové auto má najväčšie id, takže je na poslednej strane. Prejdeme tam.
+        const total = (page?.total ?? 0) + 1
+        setSkip(Math.floor((total - 1) / PAGE_SIZE) * PAGE_SIZE)
+        reload()
       } else {
         const updated = await updateVehicle(token, editing.id, data)
         // Upravené auto vymeníme na jeho mieste, ostatné necháme tak.
@@ -94,7 +114,12 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   }
 
   if (error !== null) {
-    return <p className="error">{error}</p>
+    return (
+      <div className="error">
+        <p>{error}</p>
+        <button onClick={retry}>Skúsiť znova</button>
+      </div>
+    )
   }
   if (page === null) {
     return <p>Načítavam…</p>
@@ -116,6 +141,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
         onEdit={isAdmin ? openEdit : undefined}
         onDelete={isAdmin ? handleDelete : undefined}
       />
+      <Pagination skip={skip} limit={PAGE_SIZE} total={page.total} onChange={setSkip} />
     </>
   )
 }

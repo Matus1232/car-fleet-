@@ -45,40 +45,45 @@ function App() {
   }, [token, handleLogout])
 
   return (
-    <main>
+    <>
+      {/* header je mimo <main>, aby sivý pás mohol ísť cez celú šírku okna */}
       <header>
-        <h1>Car Fleet Manager</h1>
-        {token !== null && (
-          <div className="user">
-            {user && (
-              <span>
-                {user.email} ({user.role})
-              </span>
-            )}
-            <button onClick={handleLogout}>Odhlásiť sa</button>
-          </div>
-        )}
+        <div className="header-inner">
+          <h1>Car Fleet Manager</h1>
+          {token !== null && (
+            <div className="user">
+              {user && (
+                <span>
+                  {user.email} ({user.role})
+                </span>
+              )}
+              <button onClick={handleLogout}>Odhlásiť sa</button>
+            </div>
+          )}
+        </div>
       </header>
 
-      <Routes>
-        <Route
-          path="/login"
-          element={token === null ? <LoginForm onLogin={handleLogin} /> : <Navigate to="/vehicles" replace />}
-        />
-        <Route
-          path="/vehicles"
-          element={
-            token === null ? (
-              <Navigate to="/login" replace />
-            ) : (
-              <VehiclesPage token={token} isAdmin={user?.role === 'admin'} onUnauthorized={handleLogout} />
-            )
-          }
-        />
-        {/* Akákoľvek iná adresa (aj "/") presmeruje na zoznam áut. */}
-        <Route path="*" element={<Navigate to="/vehicles" replace />} />
-      </Routes>
-    </main>
+      <main>
+        <Routes>
+          <Route
+            path="/login"
+            element={token === null ? <LoginForm onLogin={handleLogin} /> : <Navigate to="/vehicles" replace />}
+          />
+          <Route
+            path="/vehicles"
+            element={
+              token === null ? (
+                <Navigate to="/login" replace />
+              ) : (
+                <VehiclesPage token={token} isAdmin={user?.role === 'admin'} onUnauthorized={handleLogout} />
+              )
+            }
+          />
+          {/* Akákoľvek iná adresa (aj "/") presmeruje na zoznam áut. */}
+          <Route path="*" element={<Navigate to="/vehicles" replace />} />
+        </Routes>
+      </main>
+    </>
   )
 }
 
