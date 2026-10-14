@@ -7,3 +7,13 @@ services:
     command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
     volumes:
       - ./backend:/code        # live reload pri vývoji
+
+  web:
+    build:
+      context: ./frontend
+      target: dev              # Vite dev server namiesto nginx
+    environment:
+      VITE_USE_POLLING: "true"
+    volumes:
+      - ./frontend:/app        # zmeny v kóde sa hneď prejavia v prehliadači
+      - /app/node_modules      # node_modules ostane z kontajnera (Linux), neprekryje ho priečinok z Windows

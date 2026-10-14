@@ -29,5 +29,12 @@ services:
       db:
         condition: service_healthy
 
+  web:
+    build: ./frontend
+    ports:
+      - "5173:80"  # aplikácia na http://localhost:5173 (tá istá adresa ako pri npm run dev, sedí na CORS_ORIGINS)
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
