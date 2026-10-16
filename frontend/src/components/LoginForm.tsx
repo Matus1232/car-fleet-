@@ -37,6 +37,7 @@ function LoginForm({ onLogin }: Props) {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
+          autoFocus // kurzor bude v tomto políčku hneď po načítaní stránky
         />
       </label>
 
