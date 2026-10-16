@@ -37,7 +37,8 @@ function VehicleForm({ initial, onSave, onCancel }: Props) {
       {/* required, maxLength a pattern skontroluje prehliadač ešte pred odoslaním. */}
       <label>
         Značka
-        <input value={brand} onChange={(e) => setBrand(e.target.value)} required maxLength={50} />
+        {/* autoFocus: po otvorení formulára sa dá hneď písať, netreba klikať do políčka. */}
+        <input value={brand} onChange={(e) => setBrand(e.target.value)} required maxLength={50} autoFocus />
       </label>
 
       <label>
