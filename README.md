@@ -1,5 +1,7 @@
 # Car Fleet Manager
 
+**Slovenčina** | [English](README.en.md)
+
 Webová aplikácia na správu firemných áut. Firma v nej vidí, aké autá má, a môže ich pridávať,
 upravovať a mazať.
 
