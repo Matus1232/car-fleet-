@@ -31,7 +31,7 @@ function VehicleForm({ initial, onSave, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="card" onSubmit={handleSubmit}>
       <h2>{initial === null ? 'Nové auto' : 'Upraviť auto'}</h2>
 
       {/* required, maxLength a pattern skontroluje prehliadač ešte pred odoslaním. */}

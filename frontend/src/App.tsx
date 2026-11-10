@@ -53,11 +53,14 @@ function App() {
           {token !== null && (
             <div className="user">
               {user && (
-                <span>
-                  {user.email} ({user.role})
-                </span>
+                <>
+                  <span>{user.email}</span>
+                  <span className="role">{user.role}</span>
+                </>
               )}
-              <button onClick={handleLogout}>Odhlásiť sa</button>
+              <button className="secondary" onClick={handleLogout}>
+                Odhlásiť sa
+              </button>
             </div>
           )}
         </div>
