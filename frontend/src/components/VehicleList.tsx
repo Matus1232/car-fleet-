@@ -9,7 +9,7 @@ type Props = {
 
 function VehicleList({ vehicles, onEdit, onDelete }: Props) {
   if (vehicles.length === 0) {
-    return <p>Zatiaľ tu nie sú žiadne autá.</p>
+    return <p className="empty">Zatiaľ tu nie sú žiadne autá.</p>
   }
 
   const showActions = onEdit !== undefined || onDelete !== undefined
@@ -29,20 +29,22 @@ function VehicleList({ vehicles, onEdit, onDelete }: Props) {
         <tbody>
           {vehicles.map((vehicle) => (
             <tr key={vehicle.id}>
-              <td>{vehicle.license_plate}</td>
+              <td>
+                <span className="plate">{vehicle.license_plate}</span>
+              </td>
               <td>{vehicle.brand}</td>
               <td>{vehicle.model}</td>
-              <td>{new Date(vehicle.created_at).toLocaleDateString('sk-SK')}</td>
+              <td className="date">{new Date(vehicle.created_at).toLocaleDateString('sk-SK')}</td>
               {showActions && (
-                <td>
+                <td className="actions-cell">
                   <div className="actions">
                     {onEdit && (
-                      <button className="secondary" onClick={() => onEdit(vehicle)}>
+                      <button className="ghost" onClick={() => onEdit(vehicle)}>
                         Upraviť
                       </button>
                     )}
                     {onDelete && (
-                      <button className="secondary" onClick={() => onDelete(vehicle)}>
+                      <button className="ghost danger" onClick={() => onDelete(vehicle)}>
                         Zmazať
                       </button>
                     )}

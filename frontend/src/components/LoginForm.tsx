@@ -27,8 +27,9 @@ function LoginForm({ onLogin }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="card login" onSubmit={handleSubmit}>
       <h2>Prihlásenie</h2>
+      <p className="hint">Prihlás sa, aby si videl vozový park.</p>
 
       <label>
         E-mail

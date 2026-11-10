@@ -122,13 +122,15 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     )
   }
   if (page === null) {
-    return <p>Načítavam…</p>
+    return <p className="loading">Načítavam…</p>
   }
 
   return (
     <>
       <div className="toolbar">
-        <p>Počet áut: {page.total}</p>
+        <h2>
+          Vozidlá<span className="count">{page.total}</span>
+        </h2>
         {isAdmin && !showForm && <button onClick={openCreate}>Pridať auto</button>}
       </div>
       {showForm && (
