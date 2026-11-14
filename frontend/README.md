@@ -12,10 +12,13 @@ main.tsx                  vstupný bod: vykreslí App do <div id="root"> v index
 App.tsx                   token a prihlásený používateľ, hlavička, stránky (React Router)
 api.ts                    všetka komunikácia s backendom (fetch, token v hlavičke, texty chýb)
 types.ts                  TypeScript typy zodpovedajúce schémam backendu (Vehicle, User, ...)
+dates.ts                  pomocné funkcie na dátumy (dnešok, formátovanie, dni do termínu)
 index.css                 všetky štýly
+assets/car-outline.svg    sivý obrys auta na pozadí dashboardu
 components/
   LoginForm.tsx           prihlasovací formulár
   VehiclesPage.tsx        stránka s autami: načítanie, stránkovanie, pridanie, úprava, mazanie
+  Dashboard.tsx           prehľad hore: počet áut, končiaca STK, autá po STK
   VehicleList.tsx         tabuľka áut (len zobrazuje, dáta dostane cez props)
   VehicleForm.tsx         formulár na pridanie aj úpravu auta
   VehicleServices.tsx     servisné záznamy jedného auta: zoznam, súčet a formulár na pridanie
@@ -29,6 +32,7 @@ flowchart TD
     main["main.tsx"] --> App
     App --> LoginForm
     App --> VehiclesPage
+    VehiclesPage --> Dashboard
     VehiclesPage --> VehicleForm
     VehiclesPage --> VehicleServices
     VehiclesPage --> VehicleList
@@ -37,6 +41,7 @@ flowchart TD
     LoginForm -. "api.ts" .-> API
     VehiclesPage -. "api.ts" .-> API
     VehicleServices -. "api.ts" .-> API
+    Dashboard -. "api.ts" .-> API
 ```
 
 Dáta tečú zhora nadol cez props, udalosti idú hore cez funkcie v props (`onLogin`, `onSave`, `onDelete`, ...).

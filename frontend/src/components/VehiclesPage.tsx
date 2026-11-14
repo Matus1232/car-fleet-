@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createVehicle, deleteVehicle, errorMessage, getVehicles, UnauthorizedError, updateVehicle } from '../api'
 import type { Vehicle, VehicleInput, VehiclePage } from '../types'
+import Dashboard from './Dashboard'
 import Pagination from './Pagination'
 import VehicleForm from './VehicleForm'
 import VehicleList from './VehicleList'
@@ -24,6 +25,8 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [skip, setSkip] = useState(0)
   // Počítadlo, ktoré len zvyšujeme. Je v závislostiach useEffect, takže jeho zmena = načítaj znova.
   const [reloadCount, setReloadCount] = useState(0)
+  // To isté pre dashboard: zvýšime ho po každom pridaní, úprave a zmazaní auta.
+  const [statsVersion, setStatsVersion] = useState(0)
 
   // Spustí sa po prvom zobrazení a potom vždy, keď sa zmení token, strana alebo reloadCount.
   useEffect(() => {
@@ -63,6 +66,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     setDeleteError(null)
     try {
       await deleteVehicle(token, vehicle.id)
+      setStatsVersion((version) => version + 1)
       if (editing?.id === vehicle.id) closeForm() // zmazané auto už nemá zmysel upravovať
       if (servicing?.id === vehicle.id) setServicing(null) // jeho servis zmizol spolu s ním
       // Bolo to posledné auto na strane? Vráť sa o stranu späť, inak načítaj tú istú znova.
@@ -117,6 +121,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
         // Upravené auto vymeníme na jeho mieste, ostatné necháme tak.
         setPage((prev) => prev && { ...prev, items: prev.items.map((v) => (v.id === updated.id ? updated : v)) })
       }
+      setStatsVersion((version) => version + 1)
       closeForm()
     } catch (err) {
       if (err instanceof UnauthorizedError) onUnauthorized()
@@ -138,6 +143,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
 
   return (
     <>
+      <Dashboard token={token} version={statsVersion} onUnauthorized={onUnauthorized} />
       <div className="toolbar">
         <h2>
           Vozidlá<span className="count">{page.total}</span>

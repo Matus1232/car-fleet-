@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import Date, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -16,4 +16,7 @@ class Vehicle(Base):
     brand: Mapped[str] = mapped_column(String(50))
     model: Mapped[str] = mapped_column(String(50))
     license_plate: Mapped[str] = mapped_column(String(20), unique=True)
+    # Posledný deň, keď ešte platí STK. "date | None" = stĺpec smie byť prázdny (NULL):
+    # autá pridané skôr dátum nemajú a nie každý ho pri pridávaní pozná.
+    stk_valid_until: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

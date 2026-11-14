@@ -1,4 +1,12 @@
-import type { ServiceRecord, ServiceRecordInput, User, Vehicle, VehicleInput, VehiclePage } from './types'
+import type {
+  ServiceRecord,
+  ServiceRecordInput,
+  User,
+  Vehicle,
+  VehicleInput,
+  VehiclePage,
+  VehicleStats,
+} from './types'
 
 // Adresa backendu. Prehliadač ju volá priamo, aj keď frontend beží v Dockeri (port 8000 je zverejnený).
 const API_URL = 'http://localhost:8000'
@@ -69,6 +77,12 @@ export async function getVehicles(token: string, skip: number, limit: number): P
   return response.json()
 }
 
+// Počty pre dashboard: všetky autá, autá s končiacou STK a autá po STK.
+export async function getVehicleStats(token: string): Promise<VehicleStats> {
+  const response = await request('/vehicles/stats', token)
+  return response.json()
+}
+
 export async function createVehicle(token: string, data: VehicleInput): Promise<Vehicle> {
   const response = await request('/vehicles', token, {
     method: 'POST',
@@ -78,7 +92,7 @@ export async function createVehicle(token: string, data: VehicleInput): Promise<
   return response.json()
 }
 
-// PATCH dovoľuje poslať len zmenené polia, my pre jednoduchosť posielame vždy všetky tri.
+// PATCH dovoľuje poslať len zmenené polia, my pre jednoduchosť posielame vždy všetky.
 export async function updateVehicle(token: string, id: number, data: VehicleInput): Promise<Vehicle> {
   const response = await request(`/vehicles/${id}`, token, {
     method: 'PATCH',

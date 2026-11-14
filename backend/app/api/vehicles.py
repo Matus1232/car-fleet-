@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -6,7 +8,13 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_admin
 from app.db.session import get_db
 from app.models.vehicle import LICENSE_PLATE_UNIQUE, Vehicle
-from app.schemas.vehicle import VehicleCreate, VehiclePage, VehicleRead, VehicleUpdate
+from app.schemas.vehicle import (
+    VehicleCreate,
+    VehiclePage,
+    VehicleRead,
+    VehicleStats,
+    VehicleUpdate,
+)
 
 # Celý router vyžaduje prihláseného používateľa. Zápisové endpointy navyše vyžadujú admina
 # (require_admin). FastAPI si výsledok get_current_user v rámci requestu zapamätá,
@@ -16,6 +24,10 @@ admin_only = [Depends(require_admin)]
 
 # Najväčšia hodnota stĺpca INTEGER v PostgreSQL. Väčšie číslo by databáza odmietla chybou (500).
 PG_INT_MAX = 2_147_483_647
+
+# Koľko dní pred koncom platnosti sa STK ráta ako "čoskoro končí".
+# To isté číslo má frontend v src/dates.ts, treba ich meniť spolu.
+STK_SOON_DAYS = 30
 
 
 def _get_or_404(db: Session, vehicle_id: int) -> Vehicle:
@@ -48,6 +60,25 @@ def list_vehicles(
     items = db.scalars(select(Vehicle).order_by(Vehicle.id).offset(skip).limit(limit)).all()
     total = db.scalar(select(func.count()).select_from(Vehicle))
     return VehiclePage(items=items, total=total, skip=skip, limit=limit)
+
+
+# Musí byť nad "/{vehicle_id}": FastAPI skúša cesty zhora nadol a "/vehicles/stats" by inak
+# skončilo v get_vehicle, ktoré by sa zo slova "stats" snažilo spraviť číslo (chyba 422).
+@router.get("/stats", response_model=VehicleStats)
+def vehicle_stats(db: Session = Depends(get_db)):
+    # Dnešok podľa hodín servera (v Dockeri UTC), okolo polnoci sa preto môže o deň líšiť.
+    today = date.today()
+    soon = today + timedelta(days=STK_SOON_DAYS)
+    # Všetky tri čísla jedným dopytom: count() ráta riadky, filter() len tie, čo spĺňajú podmienku.
+    # Autá bez dátumu (NULL) nespĺňajú ani jednu podmienku, lebo porovnanie s NULL nie je pravda.
+    total, expiring, expired = db.execute(
+        select(
+            func.count(),
+            func.count().filter(Vehicle.stk_valid_until.between(today, soon)),
+            func.count().filter(Vehicle.stk_valid_until < today),
+        ).select_from(Vehicle)
+    ).one()
+    return VehicleStats(total=total, stk_expiring=expiring, stk_expired=expired)
 
 
 @router.get("/{vehicle_id}", response_model=VehicleRead)
