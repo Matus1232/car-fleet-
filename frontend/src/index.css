@@ -98,6 +98,71 @@ h2 {
   border-radius: 999px;
 }
 
+/* Dashboard: biela karta s tromi číslami, v pozadí sivý obrys auta */
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap; /* na úzkej obrazovke sa čísla zalomia pod seba */
+  gap: 20px 48px;
+  min-height: 148px;
+  margin-bottom: 32px;
+  padding: 28px 32px;
+  /* Obrázok na pozadí: neopakuje sa, je prilepený vpravo dole a jeho výška je 150 % karty,
+     takže z nej kúsok "vytŕča". overflow: hidden odreže to, čo by presahovalo cez okraj. */
+  background: var(--surface) url('./assets/car-outline.svg') no-repeat right -70px bottom -42px / auto 150%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.stat.alert .stat-value {
+  color: var(--danger);
+}
+
+/* Na mobile je auto za číslami, tak ho zmenšíme a posunieme viac mimo */
+@media (max-width: 600px) {
+  .dashboard {
+    padding: 20px;
+    background-size: auto 62%;
+    background-position: right -150px bottom -14px;
+  }
+}
+
+/* Malý štítok vedľa dátumu STK ("o 12 dní", "po termíne") */
+.badge {
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+
+.badge.alert {
+  color: var(--danger);
+  background: #fef3f2;
+  border-color: #fecdca;
+}
+
 /* Nad tabuľkou: nadpis s počtom áut vľavo, tlačidlo vpravo */
 
 .toolbar {

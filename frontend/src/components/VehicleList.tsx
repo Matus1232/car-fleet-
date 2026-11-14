@@ -1,3 +1,4 @@
+import { daysLabel, daysUntil, formatDate, STK_SOON_DAYS } from '../dates'
 import type { Vehicle } from '../types'
 
 type Props = {
@@ -6,6 +7,22 @@ type Props = {
   // Otáznik = nepovinné. Keď ich nedostaneme, tlačidlá Upraviť a Zmazať sa neukážu.
   onEdit?: (vehicle: Vehicle) => void
   onDelete?: (vehicle: Vehicle) => void
+}
+
+// Bunka so STK: dátum a pri končiacej alebo neplatnej STK aj malý štítok.
+function StkCell({ validUntil }: { validUntil: string | null }) {
+  if (validUntil === null) return <span className="date">–</span>
+
+  const days = daysUntil(validUntil)
+  return (
+    <>
+      <span className="date">{formatDate(validUntil)}</span>
+      {days < 0 && <span className="badge alert">po termíne</span>}
+      {days >= 0 && days <= STK_SOON_DAYS && (
+        <span className="badge">{days === 0 ? 'končí dnes' : `o ${daysLabel(days)}`}</span>
+      )}
+    </>
+  )
 }
 
 function VehicleList({ vehicles, onServices, onEdit, onDelete }: Props) {
@@ -21,6 +38,7 @@ function VehicleList({ vehicles, onServices, onEdit, onDelete }: Props) {
             <th>ŠPZ</th>
             <th>Značka</th>
             <th>Model</th>
+            <th>STK do</th>
             <th>Pridané</th>
             <th></th>
           </tr>
@@ -33,6 +51,9 @@ function VehicleList({ vehicles, onServices, onEdit, onDelete }: Props) {
               </td>
               <td>{vehicle.brand}</td>
               <td>{vehicle.model}</td>
+              <td>
+                <StkCell validUntil={vehicle.stk_valid_until} />
+              </td>
               <td className="date">{new Date(vehicle.created_at).toLocaleDateString('sk-SK')}</td>
               <td className="actions-cell">
                 <div className="actions">

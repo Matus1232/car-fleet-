@@ -11,14 +11,18 @@ can get into the application.
 
 Each car has a service history: what was done, when and how much it cost.
 
-This is the first version (MVP). Deadline reminders, such as the technical inspection (STK),
-emissions check, insurance and motorway vignette, will come later.
+This is the first version (MVP). For now each car tracks the validity of its technical inspection (STK);
+more deadlines will come later: emissions check, insurance and motorway vignette.
 
 ![List of cars in the application](docs/screenshots/vehicles-admin.png)
 
 ## Features
 
-After signing in, the user sees a list of cars with the licence plate, make, model and date added,
+After signing in, an overview at the top shows how many cars the company has, how many have a technical
+inspection (STK) expiring within 30 days and how many are already past it. The inspection date is optional
+and shown in the list with a label when it is expiring or overdue.
+
+Below it, the user sees a list of cars with the licence plate, make, model and date added,
 10 cars per page. An admin has Edit and Delete buttons next to each car and an Add car button above the table.
 A driver sees the same table without these buttons.
 
@@ -110,7 +114,7 @@ the request (otherwise `401`), and `require_admin` checks that it's an admin (ot
 | Table | Contents |
 |---|---|
 | `users` | e-mail (unique), password hash, role (`admin` or `driver`), creation date |
-| `vehicles` | make, model, licence plate (unique), date added |
+| `vehicles` | make, model, licence plate (unique), inspection validity (optional), date added |
 | `service_records` | which car it belongs to, what was done, cost, service date |
 
 Each service record belongs to one car. Deleting a car also deletes its records.
@@ -295,4 +299,5 @@ docker-compose.override.yml  development settings, loaded by Docker automaticall
 - [x] Backend tests and CI
 - [x] Frontend: sign-in, car list, adding, editing, deleting
 - [x] Car service history with costs
-- [ ] Deadline reminders (technical inspection, emissions check, insurance, motorway vignette)
+- [x] Overview: number of cars, expiring and overdue technical inspections
+- [ ] More deadlines (emissions check, insurance, motorway vignette)

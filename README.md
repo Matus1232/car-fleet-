@@ -10,14 +10,17 @@ nezmení. Registrácia nie je verejná: účty zakladá admin, takže sa do apli
 
 Ku každému autu sa dá viesť servisná história: čo sa robilo, kedy a koľko to stálo.
 
-Toto je prvá verzia (MVP). Neskôr pribudnú pripomienky termínov, ako STK, emisná kontrola,
-poistenie a diaľničná známka.
+Toto je prvá verzia (MVP). Pri aute sa zatiaľ sleduje platnosť STK, neskôr pribudnú ďalšie termíny:
+emisná kontrola, poistenie a diaľničná známka.
 
 ![Zoznam áut v aplikácii](docs/screenshots/vehicles-admin.png)
 
 ## Čo aplikácia vie
 
-Po prihlásení sa zobrazí zoznam áut s ŠPZ, značkou, modelom a dátumom pridania, po 10 autách na stranu.
+Po prihlásení je hore prehľad: koľko áut firma má, koľkým končí STK do 30 dní a koľké sú už po STK.
+
+Pod ním je zoznam áut s ŠPZ, značkou, modelom, platnosťou STK a dátumom pridania, po 10 autách na stranu.
+Pri aute, ktorému STK končí alebo už neplatí, je pri dátume štítok. Dátum STK je nepovinný.
 Admin má pri každom aute tlačidlá Upraviť a Zmazať a nad tabuľkou tlačidlo Pridať auto.
 Vodič vidí tú istú tabuľku bez týchto tlačidiel.
 
@@ -108,7 +111,7 @@ posiela (inak `401`), a `require_admin` overí, či je to admin (inak `403`).
 | Tabuľka | Čo obsahuje |
 |---|---|
 | `users` | e-mail (každý len raz), hash hesla, rola (`admin` alebo `driver`), dátum vytvorenia |
-| `vehicles` | značka, model, ŠPZ (každá len raz), dátum pridania |
+| `vehicles` | značka, model, ŠPZ (každá len raz), platnosť STK (nepovinná), dátum pridania |
 | `service_records` | ku ktorému autu patrí, čo sa robilo, cena, dátum servisu |
 
 Každý servisný záznam patrí jednému autu. Keď sa auto zmaže, zmažú sa aj jeho záznamy.
@@ -293,4 +296,5 @@ docker-compose.override.yml  vývojové nastavenie, Docker ho načíta automatic
 - [x] Testy a CI pre backend
 - [x] Frontend: prihlásenie, zoznam áut, pridanie, úprava, mazanie
 - [x] Servisná história áut s cenou
-- [ ] Pripomienky termínov (STK, emisná kontrola, poistenie, diaľničná známka)
+- [x] Prehľad: počet áut, končiaca a neplatná STK
+- [ ] Ďalšie termíny (emisná kontrola, poistenie, diaľničná známka)

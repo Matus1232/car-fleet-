@@ -14,6 +14,8 @@ function VehicleForm({ initial, onSave, onCancel }: Props) {
   const [brand, setBrand] = useState(initial?.brand ?? '')
   const [model, setModel] = useState(initial?.model ?? '')
   const [licensePlate, setLicensePlate] = useState(initial?.license_plate ?? '')
+  // <input type="date"> pracuje s textom: prázdny reťazec = dátum nie je vyplnený.
+  const [stkValidUntil, setStkValidUntil] = useState(initial?.stk_valid_until ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -22,7 +24,8 @@ function VehicleForm({ initial, onSave, onCancel }: Props) {
     setError(null)
     setSaving(true)
     try {
-      await onSave({ brand, model, license_plate: licensePlate })
+      // Prázdne pole pošleme ako null ("auto nemá zadanú STK"), nie ako prázdny text.
+      await onSave({ brand, model, license_plate: licensePlate, stk_valid_until: stkValidUntil || null })
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -55,6 +58,11 @@ function VehicleForm({ initial, onSave, onCancel }: Props) {
           pattern="[A-Za-z0-9 \-]+"
           title="Len písmená, číslice, medzery a pomlčky"
         />
+      </label>
+
+      <label>
+        STK platná do (nepovinné)
+        <input type="date" value={stkValidUntil} onChange={(e) => setStkValidUntil(e.target.value)} />
       </label>
 
       {error && <p className="error">{error}</p>}

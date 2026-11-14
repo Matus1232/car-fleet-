@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createService, deleteService, errorMessage, getServices, UnauthorizedError } from '../api'
+import { formatDate, today } from '../dates'
 import type { ServiceRecord, Vehicle } from '../types'
 
 type Props = {
@@ -13,18 +14,6 @@ type Props = {
 
 // Formátovač vytvoríme raz, mimo komponentu: 89.9 -> "89,90 €".
 const money = new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' })
-
-// Dnešný dátum v tvare "2026-11-14", aký chce <input type="date"> aj backend.
-function today(): string {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0') // 5 -> "05"
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` // mesiace sú od 0
-}
-
-// "2026-11-02" -> "2. 11. 2026". timeZone: 'UTC', aby sa deň neposunul podľa časového pásma.
-function formatDate(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString('sk-SK', { timeZone: 'UTC' })
-}
 
 function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: Props) {
   const [records, setRecords] = useState<ServiceRecord[] | null>(null) // null = ešte sa načítava

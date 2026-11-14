@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -26,6 +26,8 @@ class VehicleBase(BaseModel):
     brand: str = Field(min_length=1, max_length=50)
     model: str = Field(min_length=1, max_length=50)
     license_plate: str
+    # Nepovinné: keď ho klient nepošle (alebo pošle null), auto ostane bez dátumu STK.
+    stk_valid_until: date | None = None
 
     @field_validator("license_plate")
     @classmethod
@@ -38,7 +40,10 @@ class VehicleCreate(VehicleBase):
 
 
 class VehicleUpdate(VehicleBase):
-    """Všetky polia sú voliteľné, ale ak sú poslané, nesmú byť null."""
+    """Všetky polia sú voliteľné, ale ak sú poslané, nesmú byť null.
+
+    Výnimkou je stk_valid_until: null tam znamená "zmaž dátum STK".
+    """
 
     brand: str = Field(default=None, min_length=1, max_length=50)
     model: str = Field(default=None, min_length=1, max_length=50)
@@ -61,6 +66,7 @@ class VehicleRead(BaseModel):
     brand: str
     model: str
     license_plate: str
+    stk_valid_until: date | None
     created_at: datetime
 
 
@@ -69,3 +75,11 @@ class VehiclePage(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class VehicleStats(BaseModel):
+    """Čísla pre dashboard. Auto bez zadaného dátumu STK sa ráta len do total."""
+
+    total: int
+    stk_expiring: int  # STK ešte platí, ale skončí do STK_SOON_DAYS dní
+    stk_expired: int  # platnosť STK už skončila
