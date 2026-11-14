@@ -8,8 +8,10 @@ upravovať a mazať.
 Používatelia majú dve roly. **Admin** spravuje autá aj používateľov. **Vodič** autá len vidí a nič
 nezmení. Registrácia nie je verejná: účty zakladá admin, takže sa do aplikácie nedostane nikto zvonka.
 
-Toto je prvá verzia (MVP). Neskôr pribudne servisná história áut a pripomienky termínov, ako STK,
-emisná kontrola, poistenie a diaľničná známka.
+Ku každému autu sa dá viesť servisná história: čo sa robilo, kedy a koľko to stálo.
+
+Toto je prvá verzia (MVP). Neskôr pribudnú pripomienky termínov, ako STK, emisná kontrola,
+poistenie a diaľničná známka.
 
 ![Zoznam áut v aplikácii](docs/screenshots/vehicles-admin.png)
 
@@ -18,6 +20,9 @@ emisná kontrola, poistenie a diaľničná známka.
 Po prihlásení sa zobrazí zoznam áut s ŠPZ, značkou, modelom a dátumom pridania, po 10 autách na stranu.
 Admin má pri každom aute tlačidlá Upraviť a Zmazať a nad tabuľkou tlačidlo Pridať auto.
 Vodič vidí tú istú tabuľku bez týchto tlačidiel.
+
+Tlačidlo Servis pri aute otvorí jeho servisné záznamy (dátum, čo sa robilo, cena) aj so súčtom,
+koľko servis auta stál dokopy. Admin môže záznamy pridávať a mazať, vodič ich len vidí.
 
 ![Formulár na pridanie auta](docs/screenshots/vehicle-form.png)
 
@@ -104,8 +109,10 @@ posiela (inak `401`), a `require_admin` overí, či je to admin (inak `403`).
 |---|---|
 | `users` | e-mail (každý len raz), hash hesla, rola (`admin` alebo `driver`), dátum vytvorenia |
 | `vehicles` | značka, model, ŠPZ (každá len raz), dátum pridania |
+| `service_records` | ku ktorému autu patrí, čo sa robilo, cena, dátum servisu |
 
-Tabuľky zatiaľ nie sú prepojené, autá nie sú priradené konkrétnemu vodičovi.
+Každý servisný záznam patrí jednému autu. Keď sa auto zmaže, zmažú sa aj jeho záznamy.
+Autá zatiaľ nie sú priradené konkrétnemu vodičovi.
 
 ## Spustenie
 
@@ -285,5 +292,5 @@ docker-compose.override.yml  vývojové nastavenie, Docker ho načíta automatic
 - [x] Prihlásenie, roly a ochrana proti hádaniu hesiel
 - [x] Testy a CI pre backend
 - [x] Frontend: prihlásenie, zoznam áut, pridanie, úprava, mazanie
-- [ ] Servisná história áut
+- [x] Servisná história áut s cenou
 - [ ] Pripomienky termínov (STK, emisná kontrola, poistenie, diaľničná známka)

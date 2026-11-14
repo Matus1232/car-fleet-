@@ -1,4 +1,4 @@
-import type { User, Vehicle, VehicleInput, VehiclePage } from './types'
+import type { ServiceRecord, ServiceRecordInput, User, Vehicle, VehicleInput, VehiclePage } from './types'
 
 // Adresa backendu. Prehliadač ju volá priamo, aj keď frontend beží v Dockeri (port 8000 je zverejnený).
 const API_URL = 'http://localhost:8000'
@@ -52,7 +52,7 @@ async function request(path: string, token: string, options: RequestInit = {}): 
 // Zrozumiteľné texty pre chyby, ktoré vracia backend (409 zatiaľ vzniká len pri duplicitnej ŠPZ).
 const ERROR_MESSAGES: Record<number, string> = {
   403: 'Na túto akciu nemáš oprávnenie.',
-  404: 'Auto sa nenašlo, možno ho medzitým niekto zmazal.',
+  404: 'Záznam sa nenašiel, možno ho medzitým niekto zmazal.',
   409: 'Auto s touto ŠPZ už existuje.',
   422: 'Skontroluj zadané údaje.',
 }
@@ -91,4 +91,27 @@ export async function updateVehicle(token: string, id: number, data: VehicleInpu
 // DELETE vracia 204 No Content, takže z odpovede nič nečítame.
 export async function deleteVehicle(token: string, id: number): Promise<void> {
   await request(`/vehicles/${id}`, token, { method: 'DELETE' })
+}
+
+// Servisné záznamy sú na backende "pod" autom: /vehicles/5/services.
+export async function getServices(token: string, vehicleId: number): Promise<ServiceRecord[]> {
+  const response = await request(`/vehicles/${vehicleId}/services`, token)
+  return response.json()
+}
+
+export async function createService(
+  token: string,
+  vehicleId: number,
+  data: ServiceRecordInput,
+): Promise<ServiceRecord> {
+  const response = await request(`/vehicles/${vehicleId}/services`, token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  return response.json()
+}
+
+export async function deleteService(token: string, vehicleId: number, serviceId: number): Promise<void> {
+  await request(`/vehicles/${vehicleId}/services/${serviceId}`, token, { method: 'DELETE' })
 }

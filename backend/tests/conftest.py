@@ -38,7 +38,7 @@ def _migrated_database():
 @pytest.fixture(autouse=True)
 def _clean_tables():
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE vehicles, users RESTART IDENTITY"))
+        conn.execute(text("TRUNCATE service_records, vehicles, users RESTART IDENTITY"))
 
 
 @pytest.fixture(autouse=True)

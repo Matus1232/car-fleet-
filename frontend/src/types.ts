@@ -14,6 +14,23 @@ export type VehicleInput = {
   license_plate: string
 }
 
+// Servisný záznam auta (zodpovedá ServiceRecordRead v backend/app/schemas/service_record.py).
+export type ServiceRecord = {
+  id: number
+  vehicle_id: number
+  description: string
+  cost: string // suma príde ako text, napr. "89.90", aby sa nestratila presnosť
+  service_date: string // len deň, napr. "2026-11-02"
+  created_at: string
+}
+
+// Čo posielame pri pridávaní servisu (zodpovedá ServiceRecordCreate).
+export type ServiceRecordInput = {
+  description: string
+  cost: string
+  service_date: string
+}
+
 // Prihlásený používateľ z GET /auth/me (zodpovedá UserRead).
 export type User = {
   id: number

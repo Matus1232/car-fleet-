@@ -2,17 +2,16 @@ import type { Vehicle } from '../types'
 
 type Props = {
   vehicles: Vehicle[]
-  // Otáznik = nepovinné. Keď nedostaneme ani jedno, stĺpec s tlačidlami sa neukáže.
+  onServices: (vehicle: Vehicle) => void // servis si smie pozrieť každý, preto je povinné
+  // Otáznik = nepovinné. Keď ich nedostaneme, tlačidlá Upraviť a Zmazať sa neukážu.
   onEdit?: (vehicle: Vehicle) => void
   onDelete?: (vehicle: Vehicle) => void
 }
 
-function VehicleList({ vehicles, onEdit, onDelete }: Props) {
+function VehicleList({ vehicles, onServices, onEdit, onDelete }: Props) {
   if (vehicles.length === 0) {
     return <p className="empty">Zatiaľ tu nie sú žiadne autá.</p>
   }
-
-  const showActions = onEdit !== undefined || onDelete !== undefined
 
   return (
     <div className="table-wrap">
@@ -23,7 +22,7 @@ function VehicleList({ vehicles, onEdit, onDelete }: Props) {
             <th>Značka</th>
             <th>Model</th>
             <th>Pridané</th>
-            {showActions && <th></th>}
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -35,22 +34,23 @@ function VehicleList({ vehicles, onEdit, onDelete }: Props) {
               <td>{vehicle.brand}</td>
               <td>{vehicle.model}</td>
               <td className="date">{new Date(vehicle.created_at).toLocaleDateString('sk-SK')}</td>
-              {showActions && (
-                <td className="actions-cell">
-                  <div className="actions">
-                    {onEdit && (
-                      <button className="ghost" onClick={() => onEdit(vehicle)}>
-                        Upraviť
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button className="ghost danger" onClick={() => onDelete(vehicle)}>
-                        Zmazať
-                      </button>
-                    )}
-                  </div>
-                </td>
-              )}
+              <td className="actions-cell">
+                <div className="actions">
+                  <button className="ghost" onClick={() => onServices(vehicle)}>
+                    Servis
+                  </button>
+                  {onEdit && (
+                    <button className="ghost" onClick={() => onEdit(vehicle)}>
+                      Upraviť
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button className="ghost danger" onClick={() => onDelete(vehicle)}>
+                      Zmazať
+                    </button>
+                  )}
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

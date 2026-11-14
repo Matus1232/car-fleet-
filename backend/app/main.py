@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api import auth, users, vehicles
+from app.api import auth, services, users, vehicles
 from app.core.config import settings
 from app.db.session import get_db
 
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(vehicles.router)
+app.include_router(services.router)
 
 
 @app.get("/health")  # zámerne verejný: monitoring sa nemusí prihlasovať
