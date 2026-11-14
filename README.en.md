@@ -9,8 +9,10 @@ Users have two roles. An **admin** manages both cars and users. A **driver** can
 can't change anything. Sign-up isn't public: accounts are created by an admin, so nobody from outside
 can get into the application.
 
-This is the first version (MVP). Service history and deadline reminders, such as the technical
-inspection (STK), emissions check, insurance and motorway vignette, will come later.
+Each car has a service history: what was done, when and how much it cost.
+
+This is the first version (MVP). Deadline reminders, such as the technical inspection (STK),
+emissions check, insurance and motorway vignette, will come later.
 
 ![List of cars in the application](docs/screenshots/vehicles-admin.png)
 
@@ -19,6 +21,9 @@ inspection (STK), emissions check, insurance and motorway vignette, will come la
 After signing in, the user sees a list of cars with the licence plate, make, model and date added,
 10 cars per page. An admin has Edit and Delete buttons next to each car and an Add car button above the table.
 A driver sees the same table without these buttons.
+
+The Servis button next to a car opens its service records (date, what was done, cost) with the total
+spent on servicing that car. An admin can add and delete records, a driver can only view them.
 
 ![Form for adding a car](docs/screenshots/vehicle-form.png)
 
@@ -106,8 +111,10 @@ the request (otherwise `401`), and `require_admin` checks that it's an admin (ot
 |---|---|
 | `users` | e-mail (unique), password hash, role (`admin` or `driver`), creation date |
 | `vehicles` | make, model, licence plate (unique), date added |
+| `service_records` | which car it belongs to, what was done, cost, service date |
 
-The tables aren't linked yet; cars aren't assigned to a specific driver.
+Each service record belongs to one car. Deleting a car also deletes its records.
+Cars aren't assigned to a specific driver yet.
 
 ## Getting started
 
@@ -287,5 +294,5 @@ docker-compose.override.yml  development settings, loaded by Docker automaticall
 - [x] Sign-in, roles and protection against password guessing
 - [x] Backend tests and CI
 - [x] Frontend: sign-in, car list, adding, editing, deleting
-- [ ] Car service history
+- [x] Car service history with costs
 - [ ] Deadline reminders (technical inspection, emissions check, insurance, motorway vignette)

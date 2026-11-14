@@ -18,6 +18,7 @@ components/
   VehiclesPage.tsx        stránka s autami: načítanie, stránkovanie, pridanie, úprava, mazanie
   VehicleList.tsx         tabuľka áut (len zobrazuje, dáta dostane cez props)
   VehicleForm.tsx         formulár na pridanie aj úpravu auta
+  VehicleServices.tsx     servisné záznamy jedného auta: zoznam, súčet a formulár na pridanie
   Pagination.tsx          tlačidlá Predchádzajúca / Ďalšia
 ```
 
@@ -29,11 +30,13 @@ flowchart TD
     App --> LoginForm
     App --> VehiclesPage
     VehiclesPage --> VehicleForm
+    VehiclesPage --> VehicleServices
     VehiclesPage --> VehicleList
     VehiclesPage --> Pagination
     App -. "api.ts" .-> API["Backend API"]
     LoginForm -. "api.ts" .-> API
     VehiclesPage -. "api.ts" .-> API
+    VehicleServices -. "api.ts" .-> API
 ```
 
 Dáta tečú zhora nadol cez props, udalosti idú hore cez funkcie v props (`onLogin`, `onSave`, `onDelete`, ...).

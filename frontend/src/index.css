@@ -157,6 +157,26 @@ tbody tr:hover {
   background: var(--row-hover);
 }
 
+/* Sumy: zarovnané doprava, aby boli desatinné čiarky pod sebou */
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dlhý popis servisu sa smie zalomiť na viac riadkov (ostatné bunky nie) */
+td.wrap {
+  min-width: 200px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Posledný riadok tabuľky: súčet */
+tfoot td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+}
+
 .date {
   color: var(--muted);
   font-variant-numeric: tabular-nums; /* číslice rovnako široké -> dátumy pod sebou lícujú */
@@ -207,10 +227,38 @@ form {
   border-radius: var(--radius);
 }
 
+/* Panel so servisom potrebuje celú šírku, je v ňom tabuľka */
+.card.wide {
+  max-width: none;
+}
+
+/* ŠPZ v nadpise panela má ostať malá, nie veľká ako nadpis */
+h2 .plate {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 /* Prihlásenie je v strede stránky */
 .login {
   max-width: 360px;
   margin: 64px auto 0;
+}
+
+/* Formulár na servis: polia vedľa seba, na úzkej obrazovke sa zalomia pod seba */
+.service-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.service-form .grow {
+  flex: 1 1 220px; /* popis zaberie všetko voľné miesto */
+}
+
+.service-form input[type='number'] {
+  width: 130px;
 }
 
 .hint {

@@ -4,6 +4,7 @@ import type { Vehicle, VehicleInput, VehiclePage } from '../types'
 import Pagination from './Pagination'
 import VehicleForm from './VehicleForm'
 import VehicleList from './VehicleList'
+import VehicleServices from './VehicleServices'
 
 const PAGE_SIZE = 10
 
@@ -19,6 +20,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Vehicle | null>(null) // null = formulár pridáva nové auto
+  const [servicing, setServicing] = useState<Vehicle | null>(null) // auto, ktorého servis je otvorený
   const [skip, setSkip] = useState(0)
   // Počítadlo, ktoré len zvyšujeme. Je v závislostiach useEffect, takže jeho zmena = načítaj znova.
   const [reloadCount, setReloadCount] = useState(0)
@@ -62,6 +64,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     try {
       await deleteVehicle(token, vehicle.id)
       if (editing?.id === vehicle.id) closeForm() // zmazané auto už nemá zmysel upravovať
+      if (servicing?.id === vehicle.id) setServicing(null) // jeho servis zmizol spolu s ním
       // Bolo to posledné auto na strane? Vráť sa o stranu späť, inak načítaj tú istú znova.
       if (page !== null && page.items.length === 1 && skip > 0) {
         setSkip(skip - PAGE_SIZE)
@@ -77,14 +80,22 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     }
   }
 
+  // Nad tabuľkou je naraz otvorené len jedno: buď formulár auta, alebo jeho servis.
   function openCreate() {
+    setServicing(null)
     setEditing(null)
     setShowForm(true)
   }
 
   function openEdit(vehicle: Vehicle) {
+    setServicing(null)
     setEditing(vehicle)
     setShowForm(true)
+  }
+
+  function openServices(vehicle: Vehicle) {
+    closeForm()
+    setServicing(vehicle)
   }
 
   function closeForm() {
@@ -137,9 +148,21 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
         // key: pri prepnutí na iné auto React vytvorí formulár nanovo, s hodnotami nového auta.
         <VehicleForm key={editing?.id ?? 'new'} initial={editing} onSave={handleSave} onCancel={closeForm} />
       )}
+      {servicing && (
+        // key: pri prepnutí na iné auto sa panel vytvorí nanovo a načíta jeho záznamy.
+        <VehicleServices
+          key={servicing.id}
+          token={token}
+          vehicle={servicing}
+          isAdmin={isAdmin}
+          onClose={() => setServicing(null)}
+          onUnauthorized={onUnauthorized}
+        />
+      )}
       {deleteError && <p className="error">{deleteError}</p>}
       <VehicleList
         vehicles={page.items}
+        onServices={openServices}
         onEdit={isAdmin ? openEdit : undefined}
         onDelete={isAdmin ? handleDelete : undefined}
       />
