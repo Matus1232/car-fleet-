@@ -1,21 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 230" fill="none" stroke="#cfd5dc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <!-- karoséria: od zadného nárazníka cez strechu a kapotu dopredu, späť popod podbehy kolies -->
-  <path d="M48 170 C42 170 38 166 38 160 V146 C38 132 48 122 66 119 L150 110 C188 70 222 54 272 52 H366 C412 54 448 84 482 110 L560 121 C590 126 604 140 604 158 C604 166 600 170 594 170 H568 A52 52 0 0 0 464 170 H216 A52 52 0 0 0 112 170 Z"/>
-  <!-- okná -->
-  <path d="M176 110 C206 80 236 67 274 65 H306 V110 Z"/>
-  <path d="M322 65 H364 C400 67 430 88 456 110 H322 Z"/>
-  <!-- dvere a kľučky -->
-  <path d="M314 110 V168"/>
-  <path d="M286 126 H302"/>
-  <path d="M420 126 H436"/>
-  <!-- svetlá -->
-  <path d="M574 132 C586 134 594 140 598 148"/>
-  <path d="M40 140 H56"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 40 640 156" fill="none" stroke="#c6cdd5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- horná línia: nízky predok vľavo, blatník nad kolesom, strecha a dlhý splývavý zadok -->
+  <path d="M44 154 C58 136 104 112 172 108 C204 106 230 104 250 98 C290 74 332 60 382 60 C452 60 522 82 598 104"/>
+  <!-- zadok a spodok za zadným kolesom -->
+  <path d="M598 104 C610 112 612 128 606 144 C596 156 572 160 537 162"/>
+  <!-- predný nárazník a spodok pred predným kolesom -->
+  <path d="M44 154 C48 163 70 165 133 162"/>
+  <!-- podbehy kolies a prah medzi nimi -->
+  <path d="M133 162 A38 38 0 0 1 207 162"/>
+  <path d="M207 162 C295 167 380 167 463 162"/>
+  <path d="M463 162 A38 38 0 0 1 537 162"/>
+  <!-- bočné okno -->
+  <path d="M264 101 C302 79 342 70 384 70 C432 70 480 84 520 99 C440 104 340 105 264 101 Z"/>
+  <!-- línia boku: od predného kolesa ponad dvere, a "sval" nad zadným kolesom -->
+  <path d="M212 136 C300 126 372 124 440 126"/>
+  <path d="M424 130 C462 104 532 96 592 104"/>
+  <!-- dvere a predné svetlo -->
+  <path d="M334 104 C329 126 330 148 338 165"/>
+  <path d="M74 140 C92 130 112 124 134 122 L122 132 C104 134 88 138 74 140 Z"/>
   <!-- kolesá -->
-  <circle cx="164" cy="170" r="40"/>
-  <circle cx="164" cy="170" r="17"/>
-  <circle cx="516" cy="170" r="40"/>
-  <circle cx="516" cy="170" r="17"/>
+  <circle cx="170" cy="154" r="30"/>
+  <circle cx="170" cy="154" r="18"/>
+  <circle cx="500" cy="154" r="30"/>
+  <circle cx="500" cy="154" r="18"/>
   <!-- cesta -->
-  <path d="M8 212 H632"/>
+  <path d="M6 185 H634"/>
 </svg>

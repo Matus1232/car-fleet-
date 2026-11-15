@@ -72,6 +72,50 @@ def test_stats_count_expiring_and_expired(admin_client):
     }
 
 
+def test_list_can_be_filtered_by_stk(admin_client):
+    # Tie isté hraničné dátumy ako pri štatistikách: zoznam a čísla na dashboarde musia sedieť.
+    stk_dates = {
+        "BA000AA": None,
+        "BA100AA": in_days(-1),
+        "BA200AA": in_days(0),
+        "BA300AA": in_days(STK_SOON_DAYS),
+        "BA400AA": in_days(STK_SOON_DAYS + 1),
+    }
+    for plate, stk in stk_dates.items():
+        resp = admin_client.post(
+            "/vehicles", json={**VALID, "license_plate": plate, "stk_valid_until": stk}
+        )
+        assert resp.status_code == 201
+
+    def plates(query: str) -> list[str]:
+        return [v["license_plate"] for v in admin_client.get(f"/vehicles{query}").json()["items"]]
+
+    assert plates("?stk=expired") == ["BA100AA"]
+    assert plates("?stk=expiring") == ["BA200AA", "BA300AA"]
+    assert len(plates("")) == 5  # bez filtra príde všetko
+
+
+def test_stk_filter_counts_only_matching_vehicles(admin_client):
+    for i in range(3):
+        admin_client.post(
+            "/vehicles",
+            json={**VALID, "license_plate": f"BA{i}00AA", "stk_valid_until": in_days(-1)},
+        )
+    admin_client.post("/vehicles", json={**VALID, "license_plate": "BA900AA"})
+
+    # total ráta len vyfiltrované autá (nie všetky 4), aby stránkovanie sedelo.
+    body = admin_client.get("/vehicles", params={"stk": "expired", "limit": 2}).json()
+    assert body["total"] == 3
+    assert len(body["items"]) == 2
+
+    body = admin_client.get("/vehicles", params={"stk": "expired", "limit": 2, "skip": 2}).json()
+    assert [v["license_plate"] for v in body["items"]] == ["BA200AA"]
+
+
+def test_unknown_stk_filter_is_rejected(admin_client):
+    assert admin_client.get("/vehicles?stk=hocico").status_code == 422
+
+
 def test_driver_can_read_stats(driver_client):
     assert driver_client.get("/vehicles/stats").status_code == 200
 

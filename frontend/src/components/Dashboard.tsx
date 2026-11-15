@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { getVehicleStats, UnauthorizedError } from '../api'
 import { STK_SOON_DAYS } from '../dates'
-import type { VehicleStats } from '../types'
+import type { StkFilter, VehicleStats } from '../types'
 
 type Props = {
   token: string
   // Číslo, ktoré rodič zvýši po každej zmene áut. Je v závislostiach useEffect, takže jeho
   // zmena = načítaj štatistiky znova (rovnaký trik ako reloadCount vo VehiclesPage).
   version: number
+  // Ktorý filter je práve zapnutý (null = všetky autá). Pamätá si ho rodič, lebo podľa neho
+  // načítava tabuľku; dashboard ho len ukáže a kliknutie oznámi cez onFilter.
+  filter: StkFilter | null
+  onFilter: (filter: StkFilter | null) => void
   onUnauthorized: () => void
 }
 
-function Dashboard({ token, version, onUnauthorized }: Props) {
+function Dashboard({ token, version, filter, onFilter, onUnauthorized }: Props) {
   const [stats, setStats] = useState<VehicleStats | null>(null)
 
   useEffect(() => {
@@ -34,22 +38,32 @@ function Dashboard({ token, version, onUnauthorized }: Props) {
   // Kým dáta neprišli, namiesto čísla ukážeme pomlčku. stats?.total je undefined, keď stats je null.
   const show = (value: number | undefined) => value ?? '–'
 
+  // Všetky tri čísla sa líšia len hodnotou, textom a filtrom, tak ich opíšeme zoznamom
+  // a tlačidlá vyrobíme cez map() nižšie, namiesto troch skoro rovnakých kusov JSX.
+  const items: { filter: StkFilter | null; value: number | undefined; label: string; alert?: boolean }[] = [
+    { filter: null, value: stats?.total, label: 'Autá spolu' },
+    { filter: 'expiring', value: stats?.stk_expiring, label: `STK končí do ${STK_SOON_DAYS} dní` },
+    // Červená len vtedy, keď naozaj nejaké auto je po STK.
+    { filter: 'expired', value: stats?.stk_expired, label: 'Po STK', alert: (stats?.stk_expired ?? 0) > 0 },
+  ]
+
   return (
     // Obrys auta je obrázok na pozadí (.dashboard v index.css), preto tu preň nie je žiadny element.
     <section className="dashboard" aria-label="Prehľad vozového parku">
-      <div className="stat">
-        <span className="stat-value">{show(stats?.total)}</span>
-        <span className="stat-label">Autá spolu</span>
-      </div>
-      <div className="stat">
-        <span className="stat-value">{show(stats?.stk_expiring)}</span>
-        <span className="stat-label">STK končí do {STK_SOON_DAYS} dní</span>
-      </div>
-      {/* Červená len vtedy, keď naozaj nejaké auto je po STK. */}
-      <div className={stats && stats.stk_expired > 0 ? 'stat alert' : 'stat'}>
-        <span className="stat-value">{show(stats?.stk_expired)}</span>
-        <span className="stat-label">Po STK</span>
-      </div>
+      {items.map((item) => (
+        // <button> namiesto <div>: dá sa naň kliknúť aj prejsť klávesom Tab a stlačiť Enter.
+        // aria-pressed povie čítačke obrazovky, ktorý filter je zapnutý; CSS podľa neho kreslí čiaru.
+        <button
+          key={item.label}
+          type="button"
+          className={item.alert ? 'stat alert' : 'stat'}
+          aria-pressed={filter === item.filter}
+          onClick={() => onFilter(item.filter)}
+        >
+          <span className="stat-value">{show(item.value)}</span>
+          <span className="stat-label">{item.label}</span>
+        </button>
+      ))}
     </section>
   )
 }
