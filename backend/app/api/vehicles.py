@@ -1,7 +1,8 @@
 from datetime import date, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import ColumnElement, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -51,14 +52,37 @@ def _commit(db: Session) -> None:
         raise
 
 
+def _stk_conditions(today: date) -> dict[str, ColumnElement[bool]]:
+    """Podmienky pre stav STK. Používa ich filter zoznamu aj štatistiky, aby rátali rovnako.
+
+    Autá bez dátumu (NULL) nespĺňajú ani jednu, lebo porovnanie s NULL nie je pravda.
+    """
+    soon = today + timedelta(days=STK_SOON_DAYS)
+    return {
+        "expiring": Vehicle.stk_valid_until.between(today, soon),  # platí, ale čoskoro skončí
+        "expired": Vehicle.stk_valid_until < today,  # už neplatí
+    }
+
+
 @router.get("", response_model=VehiclePage)
 def list_vehicles(
     skip: int = Query(0, ge=0, le=PG_INT_MAX),
     limit: int = Query(100, ge=1, le=100),
+    # Nepovinný filter: /vehicles?stk=expired. Literal dovolí len tieto dva texty,
+    # čokoľvek iné FastAPI samo odmietne chybou 422.
+    stk: Literal["expiring", "expired"] | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    items = db.scalars(select(Vehicle).order_by(Vehicle.id).offset(skip).limit(limit)).all()
-    total = db.scalar(select(func.count()).select_from(Vehicle))
+    query = select(Vehicle)
+    count = select(func.count()).select_from(Vehicle)
+    if stk is not None:
+        # Rovnakú podmienku dostane zoznam aj počet, inak by stránkovanie rátalo so všetkými autami.
+        condition = _stk_conditions(date.today())[stk]
+        query = query.where(condition)
+        count = count.where(condition)
+
+    items = db.scalars(query.order_by(Vehicle.id).offset(skip).limit(limit)).all()
+    total = db.scalar(count)
     return VehiclePage(items=items, total=total, skip=skip, limit=limit)
 
 
@@ -67,15 +91,13 @@ def list_vehicles(
 @router.get("/stats", response_model=VehicleStats)
 def vehicle_stats(db: Session = Depends(get_db)):
     # Dnešok podľa hodín servera (v Dockeri UTC), okolo polnoci sa preto môže o deň líšiť.
-    today = date.today()
-    soon = today + timedelta(days=STK_SOON_DAYS)
+    conditions = _stk_conditions(date.today())
     # Všetky tri čísla jedným dopytom: count() ráta riadky, filter() len tie, čo spĺňajú podmienku.
-    # Autá bez dátumu (NULL) nespĺňajú ani jednu podmienku, lebo porovnanie s NULL nie je pravda.
     total, expiring, expired = db.execute(
         select(
             func.count(),
-            func.count().filter(Vehicle.stk_valid_until.between(today, soon)),
-            func.count().filter(Vehicle.stk_valid_until < today),
+            func.count().filter(conditions["expiring"]),
+            func.count().filter(conditions["expired"]),
         ).select_from(Vehicle)
     ).one()
     return VehicleStats(total=total, stk_expiring=expiring, stk_expired=expired)

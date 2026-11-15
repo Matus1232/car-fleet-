@@ -1,6 +1,7 @@
 import type {
   ServiceRecord,
   ServiceRecordInput,
+  StkFilter,
   User,
   Vehicle,
   VehicleInput,
@@ -71,8 +72,15 @@ export async function getMe(token: string): Promise<User> {
 }
 
 // skip = koľko áut preskočiť, limit = koľko ich vrátiť (backend dovolí najviac 100).
-export async function getVehicles(token: string, skip: number, limit: number): Promise<VehiclePage> {
+// stk = nepovinný filter podľa stavu STK; null = všetky autá.
+export async function getVehicles(
+  token: string,
+  skip: number,
+  limit: number,
+  stk: StkFilter | null = null,
+): Promise<VehiclePage> {
   const params = new URLSearchParams({ skip: String(skip), limit: String(limit) })
+  if (stk !== null) params.set('stk', stk) // pridá do adresy &stk=expired
   const response = await request(`/vehicles?${params}`, token)
   return response.json()
 }

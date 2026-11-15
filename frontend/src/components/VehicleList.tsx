@@ -3,6 +3,7 @@ import type { Vehicle } from '../types'
 
 type Props = {
   vehicles: Vehicle[]
+  emptyText: string // čo napísať namiesto tabuľky, keď je zoznam prázdny (závisí od filtra)
   onServices: (vehicle: Vehicle) => void // servis si smie pozrieť každý, preto je povinné
   // Otáznik = nepovinné. Keď ich nedostaneme, tlačidlá Upraviť a Zmazať sa neukážu.
   onEdit?: (vehicle: Vehicle) => void
@@ -25,9 +26,9 @@ function StkCell({ validUntil }: { validUntil: string | null }) {
   )
 }
 
-function VehicleList({ vehicles, onServices, onEdit, onDelete }: Props) {
+function VehicleList({ vehicles, emptyText, onServices, onEdit, onDelete }: Props) {
   if (vehicles.length === 0) {
-    return <p className="empty">Zatiaľ tu nie sú žiadne autá.</p>
+    return <p className="empty">{emptyText}</p>
   }
 
   return (

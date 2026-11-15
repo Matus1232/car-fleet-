@@ -107,18 +107,43 @@ h2 {
   min-height: 148px;
   margin-bottom: 32px;
   padding: 28px 32px;
-  /* Obrázok na pozadí: neopakuje sa, je prilepený vpravo dole a jeho výška je 150 % karty,
-     takže z nej kúsok "vytŕča". overflow: hidden odreže to, čo by presahovalo cez okraj. */
-  background: var(--surface) url('./assets/car-outline.svg') no-repeat right -70px bottom -42px / auto 150%;
+  /* Obrázok na pozadí: neopakuje sa, je prilepený vpravo dole a jeho výška je 86 % karty
+     (šírka sa dopočíta sama, aby sa auto nezdeformovalo). */
+  background: var(--surface) url('./assets/car-outline.svg') no-repeat right 8px bottom 4px / auto 86%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
 
+/* Každé číslo je tlačidlo, ktoré filtruje tabuľku. Najprv zrušíme vzhľad bežného tlačidla
+   (čierne pozadie, biely text, rámik), aby ostalo len číslo s popisom. */
 .stat {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: flex-start; /* text vľavo, nie v strede tlačidla */
+  align-self: center; /* tlačidlo je vysoké len ako jeho obsah, čiara je tak hneď pod textom */
+  padding: 0 0 8px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent; /* miesto na čiaru je tu stále, len ju nevidno */
+  border-radius: 0;
+}
+
+/* Všeobecné pravidlo pre tlačidlá pri prejdení myšou stmaví pozadie; tu to nechceme. */
+button.stat:hover:not(:disabled) {
+  background: none;
+}
+
+.stat:hover {
+  border-bottom-color: var(--border-strong);
+}
+
+/* Zapnutý filter: čierna čiara pod číslom. aria-pressed nastavuje Dashboard.tsx. */
+.stat[aria-pressed='true'] {
+  border-bottom-color: var(--text);
 }
 
 .stat-value {
@@ -142,8 +167,8 @@ h2 {
 @media (max-width: 600px) {
   .dashboard {
     padding: 20px;
-    background-size: auto 62%;
-    background-position: right -150px bottom -14px;
+    background-size: auto 34%;
+    background-position: right -36px bottom 2px;
   }
 }
 

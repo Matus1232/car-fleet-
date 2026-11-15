@@ -23,6 +23,9 @@ export type VehicleStats = {
   stk_expired: number // STK už neplatí
 }
 
+// Filter zoznamu áut podľa stavu STK (parameter ?stk= na GET /vehicles).
+export type StkFilter = 'expiring' | 'expired'
+
 // Servisný záznam auta (zodpovedá ServiceRecordRead v backend/app/schemas/service_record.py).
 export type ServiceRecord = {
   id: number
