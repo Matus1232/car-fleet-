@@ -152,13 +152,16 @@ def test_vehicles_require_login(client, method, url):
     assert getattr(client, method)(url, **kwargs).status_code == 401
 
 
-def test_driver_can_read_vehicles(driver_client, make_vehicle):
-    created = make_vehicle()
-    assert driver_client.get("/vehicles").json()["total"] == 1
-    assert driver_client.get(f"/vehicles/{created['id']}").status_code == 200
+@pytest.mark.parametrize("url", ["/vehicles", "/vehicles/1", "/vehicles/stats"])
+def test_driver_cannot_read_vehicles(driver_client, make_vehicle, url):
+    # Registrácia je verejná, takže bežný účet nesmie vidieť ani zoznam áut.
+    make_vehicle()
+    resp = driver_client.get(url)
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Admin role required"
 
 
-def test_driver_cannot_modify_vehicles(driver_client, make_vehicle):
+def test_driver_cannot_modify_vehicles(admin_client, driver_client, make_vehicle):
     created = make_vehicle()
     url = f"/vehicles/{created['id']}"
     resp = driver_client.post("/vehicles", json={**VEHICLE, "license_plate": "KE1"})
@@ -166,4 +169,4 @@ def test_driver_cannot_modify_vehicles(driver_client, make_vehicle):
     assert resp.json()["detail"] == "Admin role required"
     assert driver_client.patch(url, json={"model": "Fabia"}).status_code == 403
     assert driver_client.delete(url).status_code == 403
-    assert driver_client.get(url).json() == created  # nič sa nezmenilo
+    assert admin_client.get(url).json() == created  # nič sa nezmenilo

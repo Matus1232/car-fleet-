@@ -3,7 +3,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_admin
+from app.api.deps import require_admin
 from app.api.vehicles import PG_INT_MAX
 from app.db.session import get_db
 from app.models.service_record import ServiceRecord
@@ -11,13 +11,12 @@ from app.models.vehicle import Vehicle
 from app.schemas.service_record import ServiceRecordCreate, ServiceRecordRead
 
 # Servisné záznamy sú "vnorené" pod autom: /vehicles/5/services = servis auta s id 5.
-# Rovnaké pravidlá ako pri autách: čítať smie každý prihlásený, zapisovať len admin.
+# Rovnaké pravidlá ako pri autách: čítať aj zapisovať smie len admin.
 router = APIRouter(
     prefix="/vehicles/{vehicle_id}/services",
     tags=["services"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_admin)],
 )
-admin_only = [Depends(require_admin)]
 
 
 def _vehicle_not_found() -> HTTPException:
@@ -37,12 +36,7 @@ def list_services(vehicle_id: int = Path(ge=1, le=PG_INT_MAX), db: Session = Dep
     ).all()
 
 
-@router.post(
-    "",
-    response_model=ServiceRecordRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=admin_only,
-)
+@router.post("", response_model=ServiceRecordRead, status_code=status.HTTP_201_CREATED)
 def create_service(
     data: ServiceRecordCreate,
     vehicle_id: int = Path(ge=1, le=PG_INT_MAX),
@@ -62,7 +56,7 @@ def create_service(
     return record
 
 
-@router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=admin_only)
+@router.delete("/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_service(
     vehicle_id: int = Path(ge=1, le=PG_INT_MAX),
     service_id: int = Path(ge=1, le=PG_INT_MAX),

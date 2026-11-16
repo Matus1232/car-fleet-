@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" fill="none" stroke="#c6cdd5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- list kalendára a čiara pod hlavičkou -->
+  <rect x="14" y="26" width="172" height="140" rx="12"/>
+  <path d="M14 62 H186"/>
+  <!-- dva krúžky, na ktorých kalendár visí -->
+  <path d="M58 14 V38"/>
+  <path d="M142 14 V38"/>
+  <!-- dni: tri riadky po štyri políčka, jedno je vybrané (dvojitý rámik) -->
+  <rect x="34" y="78" width="22" height="18" rx="3"/>
+  <rect x="70" y="78" width="22" height="18" rx="3"/>
+  <rect x="106" y="78" width="22" height="18" rx="3"/>
+  <rect x="142" y="78" width="22" height="18" rx="3"/>
+  <rect x="34" y="106" width="22" height="18" rx="3"/>
+  <rect x="70" y="106" width="22" height="18" rx="3"/>
+  <rect x="102" y="102" width="30" height="26" rx="5"/>
+  <rect x="106" y="106" width="22" height="18" rx="3"/>
+  <rect x="142" y="106" width="22" height="18" rx="3"/>
+  <rect x="34" y="134" width="22" height="18" rx="3"/>
+  <rect x="70" y="134" width="22" height="18" rx="3"/>
+  <rect x="106" y="134" width="22" height="18" rx="3"/>
+</svg>

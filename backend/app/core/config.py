@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # za časové okno. Potom /auth/token vracia 429, kým najstarší pokus z okna nevypadne.
     login_max_attempts: int = Field(default=10, ge=1)
     login_window_seconds: int = Field(default=15 * 60, ge=1)
+    # Ochrana registrácie: koľko pokusov o vytvorenie účtu je povolených z jednej IP adresy
+    # za časové okno. Registrácia je verejná, takže bez limitu by ju skript volal donekonečna.
+    register_max_attempts: int = Field(default=10, ge=1)
+    register_window_seconds: int = Field(default=60 * 60, ge=1)
 
     @property
     def cors_origin_list(self) -> list[str]:

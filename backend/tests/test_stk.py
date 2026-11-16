@@ -116,8 +116,8 @@ def test_unknown_stk_filter_is_rejected(admin_client):
     assert admin_client.get("/vehicles?stk=hocico").status_code == 422
 
 
-def test_driver_can_read_stats(driver_client):
-    assert driver_client.get("/vehicles/stats").status_code == 200
+def test_driver_cannot_read_stats(driver_client):
+    assert driver_client.get("/vehicles/stats").status_code == 403
 
 
 def test_stats_require_login(client):

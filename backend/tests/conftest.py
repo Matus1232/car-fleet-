@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from alembic import command  # noqa: E402
-from app.api.auth import login_limiter  # noqa: E402
+from app.api.auth import login_limiter, register_limiter  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.db.session import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -38,13 +38,14 @@ def _migrated_database():
 @pytest.fixture(autouse=True)
 def _clean_tables():
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE service_records, vehicles, users RESTART IDENTITY"))
+        conn.execute(text("TRUNCATE bookings, service_records, vehicles, users RESTART IDENTITY"))
 
 
 @pytest.fixture(autouse=True)
-def _reset_login_limiter():
-    # Limiter si pamätá pokusy v pamäti, takže by sa inak prenášali z testu do testu.
+def _reset_limiters():
+    # Limitery si pamätajú pokusy v pamäti, takže by sa inak prenášali z testu do testu.
     login_limiter.reset()
+    register_limiter.reset()
 
 
 PASSWORD = "correct horse battery"

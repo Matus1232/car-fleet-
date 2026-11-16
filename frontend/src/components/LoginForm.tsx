@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router'
 import { errorMessage, login } from '../api'
 
 type Props = {
@@ -29,7 +30,7 @@ function LoginForm({ onLogin }: Props) {
   return (
     <form className="card login" onSubmit={handleSubmit}>
       <h2>Prihlásenie</h2>
-      <p className="hint">Prihlás sa, aby si videl vozový park.</p>
+      <p className="hint">Prihlás sa a uvidíš vozový park aj termíny servisu.</p>
 
       <label>
         E-mail
@@ -56,6 +57,10 @@ function LoginForm({ onLogin }: Props) {
       <button type="submit" disabled={loading}>
         {loading ? 'Prihlasujem…' : 'Prihlásiť sa'}
       </button>
+
+      <p className="form-footer">
+        Nemáš účet? <Link to="/register">Zaregistruj sa</Link>
+      </p>
     </form>
   )
 }

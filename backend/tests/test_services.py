@@ -107,12 +107,12 @@ def test_deleting_vehicle_deletes_its_services(admin_client, make_vehicle):
     assert admin_client.get(f"/vehicles/{new['id']}/services").json() == []
 
 
-def test_driver_can_read_but_not_write(admin_client, driver_client, make_vehicle):
+def test_driver_cannot_read_or_write(admin_client, driver_client, make_vehicle):
     vehicle = make_vehicle()
     url = f"/vehicles/{vehicle['id']}/services"
     service = admin_client.post(url, json=VALID).json()
 
-    assert driver_client.get(url).status_code == 200
+    assert driver_client.get(url).status_code == 403
     assert driver_client.post(url, json=VALID).status_code == 403
     assert driver_client.delete(f"{url}/{service['id']}").status_code == 403
     assert len(admin_client.get(url).json()) == 1
