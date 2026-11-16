@@ -1,4 +1,6 @@
 import type {
+  Booking,
+  BookingInput,
   ServiceRecord,
   ServiceRecordInput,
   StkFilter,
@@ -42,8 +44,34 @@ export async function login(email: string, password: string): Promise<string> {
   return data.access_token
 }
 
+// Vytvorí nový účet cez POST /auth/register. Token nevracia, po registrácii sa treba prihlásiť.
+export async function register(email: string, password: string): Promise<void> {
+  const response = await fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    // Na rozdiel od prihlásenia je toto bežný JSON endpoint, nie OAuth2 formulár.
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+
+  if (!response.ok) {
+    throw new Error(REGISTER_ERRORS[response.status] ?? `Registrácia zlyhala (chyba ${response.status}).`)
+  }
+}
+
+const REGISTER_ERRORS: Record<number, string> = {
+  409: 'Účet s týmto e-mailom už existuje.',
+  422: 'Zadaj platný e-mail a heslo s aspoň 8 znakmi.',
+  429: 'Príliš veľa registrácií naraz, skús to neskôr.',
+}
+
 // Spoločná časť všetkých požiadaviek s tokenom: pridá hlavičku a skontroluje odpoveď.
-async function request(path: string, token: string, options: RequestInit = {}): Promise<Response> {
+// messages = vlastné texty chýb pre konkrétnu časť aplikácie; majú prednosť pred všeobecnými.
+async function request(
+  path: string,
+  token: string,
+  options: RequestInit = {},
+  messages: Record<number, string> = {},
+): Promise<Response> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: { ...options.headers, Authorization: `Bearer ${token}` },
@@ -53,7 +81,11 @@ async function request(path: string, token: string, options: RequestInit = {}): 
     throw new UnauthorizedError()
   }
   if (!response.ok) {
-    throw new Error(ERROR_MESSAGES[response.status] ?? `Požiadavka zlyhala (chyba ${response.status}).`)
+    throw new Error(
+      messages[response.status] ??
+        ERROR_MESSAGES[response.status] ??
+        `Požiadavka zlyhala (chyba ${response.status}).`,
+    )
   }
   return response
 }
@@ -136,4 +168,38 @@ export async function createService(
 
 export async function deleteService(token: string, vehicleId: number, serviceId: number): Promise<void> {
   await request(`/vehicles/${vehicleId}/services/${serviceId}`, token, { method: 'DELETE' })
+}
+
+// Rezervácie termínov servisu. Tie isté kódy chýb tu znamenajú niečo iné než pri autách
+// (409 = obsadený termín, nie duplicitná ŠPZ), preto majú vlastné texty.
+const BOOKING_ERRORS: Record<number, string> = {
+  403: 'Zrušiť môžeš len svoju rezerváciu.',
+  404: 'Táto rezervácia už neexistuje.',
+  409: 'Tento termín si práve rezervoval niekto iný.',
+  422: 'Tento termín sa už nedá rezervovať.',
+}
+
+// Obsadené termíny od dňa start po deň end (vrátane), napr. "2026-11-01" až "2026-11-30".
+export async function getBookings(token: string, start: string, end: string): Promise<Booking[]> {
+  const params = new URLSearchParams({ start, end })
+  const response = await request(`/bookings?${params}`, token, {}, BOOKING_ERRORS)
+  return response.json()
+}
+
+export async function createBooking(token: string, data: BookingInput): Promise<Booking> {
+  const response = await request(
+    '/bookings',
+    token,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    BOOKING_ERRORS,
+  )
+  return response.json()
+}
+
+export async function deleteBooking(token: string, id: number): Promise<void> {
+  await request(`/bookings/${id}`, token, { method: 'DELETE' }, BOOKING_ERRORS)
 }

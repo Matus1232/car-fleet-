@@ -43,6 +43,24 @@ export type ServiceRecordInput = {
   service_date: string
 }
 
+// Obsadený termín servisu z GET /bookings (zodpovedá BookingRead v backend/app/schemas/booking.py).
+export type Booking = {
+  id: number
+  booking_date: string // len deň, napr. "2026-11-23"
+  hour: number // hodina začiatku: 10 znamená termín od 10:00 do 11:00
+  mine: boolean // je to moja rezervácia?
+  // Kto si termín rezervoval a čo k nemu napísal, vidí len majiteľ a admin. Ostatným príde null.
+  user_email: string | null
+  note: string | null
+}
+
+// Čo posielame pri rezervácii termínu (zodpovedá BookingCreate).
+export type BookingInput = {
+  booking_date: string
+  hour: number
+  note: string
+}
+
 // Prihlásený používateľ z GET /auth/me (zodpovedá UserRead).
 export type User = {
   id: number

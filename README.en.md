@@ -5,11 +5,14 @@
 A web application for managing company cars. A company can see which cars it has and add,
 edit and delete them.
 
-Users have two roles. An **admin** manages both cars and users. A **driver** can only view cars and
-can't change anything. Sign-up isn't public: accounts are created by an admin, so nobody from outside
-can get into the application.
+Users have two roles. An **admin** manages cars and sees all service bookings. A **driver** can only
+view cars and can book a service slot. Anyone can create a driver account by signing up;
+an admin is only created by a terminal command.
 
 Each car has a service history: what was done, when and how much it cost.
+
+A driver picks a service slot in a calendar: they click a day and book a free hour.
+The admin sees who is coming and when.
 
 This is the first version (MVP). For now each car tracks the validity of its technical inspection (STK);
 more deadlines will come later: emissions check, insurance and motorway vignette.
@@ -18,7 +21,12 @@ more deadlines will come later: emissions check, insurance and motorway vignette
 
 ## Features
 
-After signing in, an overview at the top shows how many cars the company has, how many have a technical
+After signing in, a welcome page shows a menu: **Vozový park** (the fleet) and **Termín servisu**
+(service slots).
+
+### Fleet
+
+An overview at the top shows how many cars the company has, how many have a technical
 inspection (STK) expiring within 30 days and how many are already past it. The inspection date is optional
 and shown in the list with a label when it is expiring or overdue.
 
@@ -31,6 +39,17 @@ spent on servicing that car. An admin can add and delete records, a driver can o
 
 ![Form for adding a car](docs/screenshots/vehicle-form.png)
 
+### Service slots
+
+The page shows a calendar of the whole month. Every working day shows the number of free slots.
+Clicking a day shows its hourly slots from 8:00 to 17:00, each in its own coloured box. A free slot
+can be booked with a note for the garage, for example which car it's about.
+Booking is possible from Monday to Friday, at most 60 days ahead.
+
+Below the calendar a driver has a list of their bookings and can cancel them. Other people's slots
+are shown only as taken. The admin sees everyone's bookings in the calendar and in the list, with
+the e-mail and note, and can cancel any of them.
+
 A few things that aren't visible at first glance:
 
 - **Licence plates are stored in one format.** `ba 123-ab`, `BA 123 AB` and `BA123AB` are the same
@@ -41,9 +60,10 @@ A few things that aren't visible at first glance:
   signing in from it is blocked for 15 minutes.
 - **Passwords aren't stored.** The database only keeps their hash (Argon2), from which the original
   password can't be recovered.
-
-For now, an admin creates new users through the API; the application doesn't have a screen for it yet
-(the steps are below in [Adding a driver](#adding-a-driver)).
+- **Signing up never creates an admin.** People don't choose their role; a new account is always a driver.
+  One IP address can create at most 10 accounts per hour.
+- **A slot can't be booked twice.** The database itself enforces it, so when two people click
+  the same slot at the same moment, only one succeeds.
 
 ## How it's built
 
@@ -109,6 +129,9 @@ so a driver can't delete a car even by sending a request straight to the API. In
 in [`backend/app/api/deps.py`](backend/app/api/deps.py): `get_current_user` finds out who is sending
 the request (otherwise `401`), and `require_admin` checks that it's an admin (otherwise `403`).
 
+Bookings work a little differently: any signed-in user can book, and can cancel only their own booking
+(an admin can cancel any). Who booked a slot and what they wrote is sent only to the owner and the admin.
+
 ### Database
 
 | Table | Contents |
@@ -116,8 +139,10 @@ the request (otherwise `401`), and `require_admin` checks that it's an admin (ot
 | `users` | e-mail (unique), password hash, role (`admin` or `driver`), creation date |
 | `vehicles` | make, model, licence plate (unique), inspection validity (optional), date added |
 | `service_records` | which car it belongs to, what was done, cost, service date |
+| `bookings` | who booked the slot, day, hour (each day and hour pair only once), note |
 
 Each service record belongs to one car. Deleting a car also deletes its records.
+A booking belongs to one user and is deleted together with them.
 Cars aren't assigned to a specific driver yet.
 
 ## Getting started
@@ -192,7 +217,11 @@ docker compose exec api python -m app.cli create-admin --email admin@company.com
 The command asks for the password twice (at least 8 characters; you won't see it as you type). Then sign in
 at http://localhost:5173.
 
-### Adding a driver
+### More users
+
+Drivers create their own account: on the sign-in page they click **Zaregistruj sa** (Sign up).
+
+An admin can also create an account through the API, and this is the only way to add another admin:
 
 1. Open http://localhost:8000/docs and click **Authorize** in the top right.
 2. Enter the admin's e-mail as `username` and their password as `password`, then confirm.
@@ -300,4 +329,5 @@ docker-compose.override.yml  development settings, loaded by Docker automaticall
 - [x] Frontend: sign-in, car list, adding, editing, deleting
 - [x] Car service history with costs
 - [x] Overview: number of cars, expiring and overdue technical inspections
+- [x] Sign-up, welcome page and booking service slots in a calendar
 - [ ] More deadlines (emissions check, insurance, motorway vignette)

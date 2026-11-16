@@ -10,7 +10,11 @@ def normalize_email(value: str) -> str:
     return value.strip().lower()
 
 
-class UserCreate(BaseModel):
+class UserRegister(BaseModel):
+    """Čo posiela človek pri verejnej registrácii. Rola tu zámerne nie je: keby si ju mohol
+    poslať sám, spravil by zo seba admina. Polia navyše (aj "role") Pydantic jednoducho zahodí.
+    """
+
     # Na rozdiel od VehicleBase tu nie je str_strip_whitespace: heslo meniť nesmieme,
     # medzera na začiatku hesla je jeho platná súčasť.
     email: EmailStr
@@ -18,12 +22,20 @@ class UserCreate(BaseModel):
     # treba vyžiadať explicitne cez .get_secret_value(), takže heslo neunikne omylom.
     # Horná hranica chráni server: hashovať megabajtové "heslo" by trvalo zbytočne dlho.
     password: SecretStr = Field(min_length=8, max_length=128)
-    role: Role = Role.DRIVER
 
     @field_validator("email", mode="before")
     @classmethod
     def _normalize_email(cls, value):
         return normalize_email(value) if isinstance(value, str) else value
+
+
+class UserCreate(UserRegister):
+    """Účet, ktorý zakladá admin (POST /users) alebo príkaz v termináli: navyše určí rolu.
+
+    Dedí z UserRegister, takže email a heslo majú tie isté pravidlá a píšu sa len raz.
+    """
+
+    role: Role = Role.DRIVER
 
 
 class UserRead(BaseModel):

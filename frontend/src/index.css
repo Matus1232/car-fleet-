@@ -81,12 +81,72 @@ h2 {
   letter-spacing: -0.01em;
 }
 
+h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Odkazy v texte: čierne s podčiarknutím, žiadna modrá */
+a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
+/* Názov aplikácie je odkaz na úvodnú stránku, ale má vyzerať ako nadpis */
+h1 a {
+  text-decoration: none;
+}
+
+/* Ľavá časť hlavičky: názov aplikácie a vedľa neho odkazy na stránky */
+.brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 28px;
+}
+
+.nav {
+  display: flex;
+  gap: 20px;
+}
+
+.nav a {
+  padding: 4px 0 2px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent; /* miesto na čiaru je tu stále, len ju nevidno */
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+/* Otvorená stránka: čierna čiara pod odkazom. Triedu "active" pridáva NavLink z React Routera. */
+.nav a.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
 .user {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 0.875rem;
   color: var(--muted);
+}
+
+/* Na úzkej obrazovke sa smie zalomiť dlhý e-mail, tlačidlo Odhlásiť sa ostane v jednom riadku */
+.user span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.user button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .role {
@@ -334,8 +394,18 @@ h2 .plate {
   margin: 64px auto 0;
 }
 
-/* Formulár na servis: polia vedľa seba, na úzkej obrazovke sa zalomia pod seba */
-.service-form {
+/* Pod prihlásením a registráciou: odkaz na ten druhý formulár */
+.form-footer {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Formulár na servis a na rezerváciu termínu: polia vedľa seba, na úzkej obrazovke
+   sa zalomia pod seba */
+.service-form,
+.booking-form {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -343,7 +413,8 @@ h2 .plate {
   margin-top: 16px;
 }
 
-.service-form .grow {
+.service-form .grow,
+.booking-form .grow {
   flex: 1 1 220px; /* popis zaberie všetko voľné miesto */
 }
 
@@ -480,4 +551,380 @@ td .actions {
 
 .loading {
   color: var(--muted);
+}
+
+/* Úvodná stránka: privítanie a menu s dvoma kartami */
+
+.welcome {
+  margin: 16px 0 32px;
+}
+
+.welcome h2 {
+  font-size: 2.5rem; /* rovnako veľké ako čísla v dashboarde */
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.welcome p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.welcome strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* dve rovnako široké karty */
+  gap: 16px;
+}
+
+/* Karta je celá odkaz. Vpravo dole má sivý obrázok na pozadí, rovnako ako dashboard. */
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 188px;
+  padding: 28px 32px;
+  color: var(--text);
+  text-decoration: none;
+  background-color: var(--surface);
+  background-repeat: no-repeat;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s;
+}
+
+.menu-card.cars {
+  background-image: url('./assets/car-outline.svg');
+  background-position: right -28px bottom 14px;
+  background-size: auto 36%;
+}
+
+.menu-card.calendar-card {
+  background-image: url('./assets/calendar-outline.svg');
+  background-position: right 28px bottom 20px;
+  background-size: auto 56%;
+}
+
+.menu-card:hover {
+  border-color: var(--text);
+}
+
+.menu-title {
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.menu-text {
+  max-width: 28ch; /* krátke riadky, aby text nezasahoval do obrázka vpravo */
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.menu-go {
+  margin-top: auto; /* odtlačí "Otvoriť" na spodok karty */
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .menu {
+    grid-template-columns: 1fr; /* karty pod sebou */
+  }
+
+  .menu-card {
+    min-height: 156px;
+    padding: 20px;
+  }
+}
+
+/* Kalendár rezervácií: biela karta s hlavičkou (mesiac alebo deň a šípky) a obsahom */
+
+.calendar {
+  margin-bottom: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden; /* rohy políčok neprečnievajú cez zaoblenie karty */
+}
+
+.calendar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Mriežka so siedmimi stĺpcami. Čiary medzi dňami nie sú rámiky políčok: mriežka má sivé
+   pozadie a medzi bielymi políčkami je 1px medzera, cez ktorú ho vidno. */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border);
+}
+
+.weekday {
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+/* Jeden deň je tlačidlo. Najprv zrušíme vzhľad bežného tlačidla (čierne pozadie, rámik). */
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 112px;
+  padding: 8px 10px 10px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: var(--surface);
+  border: none;
+  border-radius: 0;
+}
+
+button.day:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+
+button.day:focus-visible {
+  outline-offset: -2px; /* obrys dnu, inak by ho orezal okraj karty */
+}
+
+/* Víkend a dni susedných mesiacov: sivé pozadie, nedá sa na ne kliknúť */
+button.day:disabled {
+  background: var(--bg);
+  opacity: 1; /* bežné vypnuté tlačidlo je priesvitné, tu stačí sivá farba */
+}
+
+.day-number {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 26px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+}
+
+.day.weekend .day-number,
+.day.past .day-number {
+  color: var(--muted);
+}
+
+.day.outside .day-number {
+  color: var(--border-strong);
+}
+
+/* Dnešok: číslo v čiernom krúžku. aria-current="date" nastavuje MonthCalendar.tsx. */
+.day[aria-current='date'] .day-number {
+  color: #fff;
+  background: var(--text);
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip-more,
+.day-free {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.day-free {
+  margin-top: auto; /* počet voľných termínov je vždy na spodku políčka */
+  padding-left: 4px;
+}
+
+/* Pastelové farby termínov. Každá hodina má vlastný odtieň v premennej --hue (posiela ho
+   slots.ts). oklch(svetlosť sýtosť odtieň): svetlosť a sýtosť sú pre všetky hodiny rovnaké,
+   takže farby sú rovnako jemné a líšia sa len odtieňom. Rámik je tá istá farba, len tmavšia. */
+.chip,
+.slot.free,
+.slot.booked {
+  background: oklch(0.955 0.035 var(--hue));
+  border: 1px solid oklch(0.87 0.055 var(--hue));
+}
+
+/* Malý štítok s hodinou v kalendári a v zozname rezervácií */
+.chip {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  border-radius: 999px;
+}
+
+/* Jeden deň: hodinové termíny v troch stĺpcoch */
+
+.day-body {
+  padding: 20px;
+}
+
+.day-body .hint {
+  margin: 0 0 16px;
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Rámček jedného termínu. Rovnaké zaoblenie a tenký rámik ako ostatné karty na stránke. */
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 104px;
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.slot-time {
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-status,
+.slot-note {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere; /* dlhý e-mail alebo poznámka sa zalomí, nevytečie z rámčeka */
+}
+
+.slot-status {
+  color: var(--muted);
+}
+
+/* Voľný termín je tlačidlo: pri prejdení myšou farba trochu zosilnie */
+button.slot.free:hover:not(:disabled) {
+  background: oklch(0.93 0.05 var(--hue));
+  border-color: oklch(0.78 0.08 var(--hue));
+}
+
+/* Vybraný termín a hotová rezervácia: čierny rámik ako čiara pri zapnutom filtri v dashboarde */
+.slot.free[aria-pressed='true'],
+.slot.booked {
+  border-color: var(--text);
+}
+
+.slot.free[aria-pressed='true'] {
+  outline: 1px solid var(--text); /* spolu s rámikom vyzerá ako 2px čiara a nič neposunie */
+}
+
+.slot.booked .slot-status {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Zrušenie rezervácie je na spodku rámčeka, zarovnané s textom nad ním */
+.slot .ghost {
+  margin: auto 0 -6px -10px;
+  color: var(--text);
+}
+
+.slot .ghost.danger:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.7);
+}
+
+/* Obsadené niekým iným: sivé, bez farby */
+.slot.taken {
+  background: var(--bg);
+}
+
+.slot.taken .slot-time,
+.slot.closed .slot-time {
+  color: var(--muted);
+}
+
+/* Termín, ktorý sa nedá rezervovať (už prebehol, je priďaleko): prerušovaný rámik */
+.slot.closed {
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+.booking-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* Na mobile menšie políčka kalendára a termíny v dvoch stĺpcoch */
+@media (max-width: 600px) {
+  .calendar-head {
+    padding: 12px 16px;
+  }
+
+  .weekday {
+    padding: 6px 0;
+    text-align: center;
+  }
+
+  .day {
+    align-items: center;
+    gap: 4px;
+    min-height: 72px;
+    padding: 6px 2px;
+  }
+
+  .day-chips {
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .day .chip {
+    padding: 0 4px;
+    font-size: 0.65rem;
+  }
+
+  .day-free {
+    display: none; /* text "5 voľných" sa do úzkeho políčka nezmestí */
+  }
+
+  .day-body {
+    padding: 16px;
+  }
+
+  .slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .slot {
+    padding: 12px;
+  }
+
+  .slot-time {
+    font-size: 1rem;
+  }
 }

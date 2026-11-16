@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { Link, Navigate, NavLink, Route, Routes } from 'react-router'
 import { getMe, UnauthorizedError } from './api'
+import BookingsPage from './components/BookingsPage'
+import HomePage from './components/HomePage'
 import LoginForm from './components/LoginForm'
+import RegisterForm from './components/RegisterForm'
 import VehiclesPage from './components/VehiclesPage'
 import type { User } from './types'
 
@@ -35,7 +38,7 @@ function App() {
         if (!ignore) setUser(me)
       })
       .catch((err) => {
-        // Iné chyby (napr. nedostupný server) tu ignorujeme, ukáže ich VehiclesPage.
+        // Iné chyby (napr. nedostupný server) tu ignorujeme, ukáže ich otvorená stránka.
         if (!ignore && err instanceof UnauthorizedError) handleLogout()
       })
 
@@ -44,12 +47,26 @@ function App() {
     }
   }, [token, handleLogout])
 
+  const isAdmin = user?.role === 'admin'
+
   return (
     <>
-      {/* header je mimo <main>, aby sivý pás mohol ísť cez celú šírku okna */}
+      {/* header je mimo <main>, aby biely pás mohol ísť cez celú šírku okna */}
       <header>
         <div className="header-inner">
-          <h1>Car Fleet Manager</h1>
+          <div className="brand">
+            <h1>
+              <Link to="/">Car Fleet Manager</Link>
+            </h1>
+            {token !== null && (
+              // NavLink je Link, ktorý vie, či ukazuje na práve otvorenú stránku: vtedy dostane
+              // triedu "active" a aria-current="page". CSS podľa toho kreslí čiaru pod odkazom.
+              <nav className="nav" aria-label="Stránky">
+                <NavLink to="/vehicles">Vozidlá</NavLink>
+                <NavLink to="/bookings">Servis</NavLink>
+              </nav>
+            )}
+          </div>
           {token !== null && (
             <div className="user">
               {user && (
@@ -67,24 +84,29 @@ function App() {
       </header>
 
       <main>
-        <Routes>
-          <Route
-            path="/login"
-            element={token === null ? <LoginForm onLogin={handleLogin} /> : <Navigate to="/vehicles" replace />}
-          />
-          <Route
-            path="/vehicles"
-            element={
-              token === null ? (
-                <Navigate to="/login" replace />
-              ) : (
-                <VehiclesPage token={token} isAdmin={user?.role === 'admin'} onUnauthorized={handleLogout} />
-              )
-            }
-          />
-          {/* Akákoľvek iná adresa (aj "/") presmeruje na zoznam áut. */}
-          <Route path="*" element={<Navigate to="/vehicles" replace />} />
-        </Routes>
+        {/* Dve sady stránok podľa toho, či je niekto prihlásený. V každej sade posledná cesta
+            "*" zachytí všetko ostatné, takže neprihlásený sa z /vehicles dostane na prihlásenie
+            a prihlásený z /login na úvodnú stránku. */}
+        {token === null ? (
+          <Routes>
+            <Route path="/login" element={<LoginForm onLogin={handleLogin} />} />
+            <Route path="/register" element={<RegisterForm onLogin={handleLogin} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        ) : (
+          <Routes>
+            <Route path="/" element={<HomePage user={user} />} />
+            <Route
+              path="/vehicles"
+              element={<VehiclesPage token={token} isAdmin={isAdmin} onUnauthorized={handleLogout} />}
+            />
+            <Route
+              path="/bookings"
+              element={<BookingsPage token={token} isAdmin={isAdmin} onUnauthorized={handleLogout} />}
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
       </main>
     </>
   )

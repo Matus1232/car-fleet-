@@ -8,8 +8,8 @@ from app.db.session import get_db
 from app.models.user import EMAIL_UNIQUE, User
 from app.schemas.user import UserCreate, UserRead
 
-# Verejná registrácia zámerne neexistuje: vo firemnom vozovom parku by si inak účet
-# vytvoril ktokoľvek z internetu a videl všetky autá. Používateľov zakladá len admin.
+# Tento router je len pre admina: vie založiť účet s ľubovoľnou rolou, teda aj ďalšieho admina.
+# Ostatní sa registrujú sami cez POST /auth/register, kde vždy vznikne rola "driver".
 router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(require_admin)])
 
 
@@ -18,9 +18,8 @@ def build_user(data: UserCreate) -> User:
     return User(email=data.email, hashed_password=hashed, role=data.role)
 
 
-@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def create_user(data: UserCreate, db: Session = Depends(get_db)):
-    user = build_user(data)
+def save_user(db: Session, user: User) -> User:
+    """Uloží nového používateľa. Obsadený email premení na 409 (používa to aj registrácia)."""
     db.add(user)
     try:
         db.commit()
@@ -34,3 +33,8 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
         raise
     db.refresh(user)
     return user
+
+
+@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def create_user(data: UserCreate, db: Session = Depends(get_db)):
+    return save_user(db, build_user(data))

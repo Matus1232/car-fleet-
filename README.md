@@ -5,10 +5,14 @@
 Webová aplikácia na správu firemných áut. Firma v nej vidí, aké autá má, a môže ich pridávať,
 upravovať a mazať.
 
-Používatelia majú dve roly. **Admin** spravuje autá aj používateľov. **Vodič** autá len vidí a nič
-nezmení. Registrácia nie je verejná: účty zakladá admin, takže sa do aplikácie nedostane nikto zvonka.
+Používatelia majú dve roly. **Admin** spravuje autá a vidí všetky rezervácie servisu. **Vodič** autá
+len vidí a môže si rezervovať termín servisu. Účet vodiča si vytvorí každý sám registráciou,
+admin vzniká len príkazom v termináli.
 
 Ku každému autu sa dá viesť servisná história: čo sa robilo, kedy a koľko to stálo.
+
+Termín servisu si vodič vyberie v kalendári: klikne na deň a rezervuje si voľnú hodinu.
+Admin vidí, kto a kedy príde.
 
 Toto je prvá verzia (MVP). Pri aute sa zatiaľ sleduje platnosť STK, neskôr pribudnú ďalšie termíny:
 emisná kontrola, poistenie a diaľničná známka.
@@ -17,7 +21,11 @@ emisná kontrola, poistenie a diaľničná známka.
 
 ## Čo aplikácia vie
 
-Po prihlásení je hore prehľad: koľko áut firma má, koľkým končí STK do 30 dní a koľké sú už po STK.
+Po prihlásení sa zobrazí úvodná stránka s menu: **Vozový park** a **Termín servisu**.
+
+### Vozový park
+
+Hore je prehľad: koľko áut firma má, koľkým končí STK do 30 dní a koľké sú už po STK.
 
 Pod ním je zoznam áut s ŠPZ, značkou, modelom, platnosťou STK a dátumom pridania, po 10 autách na stranu.
 Pri aute, ktorému STK končí alebo už neplatí, je pri dátume štítok. Dátum STK je nepovinný.
@@ -29,6 +37,17 @@ koľko servis auta stál dokopy. Admin môže záznamy pridávať a mazať, vodi
 
 ![Formulár na pridanie auta](docs/screenshots/vehicle-form.png)
 
+### Termín servisu
+
+Stránka ukáže kalendár celého mesiaca. Pri každom pracovnom dni je počet voľných termínov.
+Po kliknutí na deň sa zobrazia jeho hodinové termíny od 8:00 do 17:00, každý vo vlastnom farebnom
+rámčeku. Voľný termín sa dá rezervovať a pripísať k nemu poznámku pre servis, napríklad o ktoré auto ide.
+Rezervovať sa dá od pondelka do piatka, najviac 60 dní dopredu.
+
+Pod kalendárom má vodič zoznam svojich rezervácií a môže ich zrušiť. Cudzie termíny vidí len ako
+obsadené. Admin vidí v kalendári aj v zozname rezervácie všetkých ľudí s e-mailom a poznámkou
+a môže zrušiť hocktorú.
+
 Pár vecí, ktoré nie sú na prvý pohľad vidieť:
 
 - **ŠPZ sa ukladá v jednotnom tvare.** `ba 123-ab`, `BA 123 AB` aj `BA123AB` sú pre aplikáciu to isté
@@ -38,9 +57,10 @@ Pár vecí, ktoré nie sú na prvý pohľad vidieť:
 - **Heslá sa nedajú hádať donekonečna.** Po 10 neúspešných pokusoch z jednej IP adresy
   sa z nej 15 minút nedá prihlásiť.
 - **Heslá sa neukladajú.** V databáze je len ich hash (Argon2), z ktorého sa pôvodné heslo nedá získať.
-
-Nových používateľov zatiaľ admin vytvára cez API, v aplikácii na to ešte nie je obrazovka
-(postup je nižšie v časti [Pridanie vodiča](#pridanie-vodiča)).
+- **Registráciou nevznikne admin.** Rolu si človek nevyberá, nový účet je vždy vodič. Z jednej IP adresy
+  sa dá založiť najviac 10 účtov za hodinu.
+- **Jeden termín nejde rezervovať dvakrát.** Stráži to priamo databáza, takže keď dvaja ľudia kliknú
+  na ten istý termín naraz, uspeje len jeden.
 
 ## Ako je to postavené
 
@@ -106,6 +126,9 @@ takže vodič auto nezmaže ani vtedy, keď pošle požiadavku priamo na API. V 
 v [`backend/app/api/deps.py`](backend/app/api/deps.py): `get_current_user` zistí, kto požiadavku
 posiela (inak `401`), a `require_admin` overí, či je to admin (inak `403`).
 
+Pri rezerváciách je to trochu iné: rezervovať smie každý prihlásený, zrušiť len vlastnú rezerváciu
+(admin hocktorú). Kto si termín rezervoval a čo k nemu napísal, pošle API len majiteľovi a adminovi.
+
 ### Databáza
 
 | Tabuľka | Čo obsahuje |
@@ -113,8 +136,10 @@ posiela (inak `401`), a `require_admin` overí, či je to admin (inak `403`).
 | `users` | e-mail (každý len raz), hash hesla, rola (`admin` alebo `driver`), dátum vytvorenia |
 | `vehicles` | značka, model, ŠPZ (každá len raz), platnosť STK (nepovinná), dátum pridania |
 | `service_records` | ku ktorému autu patrí, čo sa robilo, cena, dátum servisu |
+| `bookings` | kto si termín rezervoval, deň, hodina (dvojica deň a hodina len raz), poznámka |
 
 Každý servisný záznam patrí jednému autu. Keď sa auto zmaže, zmažú sa aj jeho záznamy.
+Rezervácia patrí jednému používateľovi a zmaže sa spolu s ním.
 Autá zatiaľ nie sú priradené konkrétnemu vodičovi.
 
 ## Spustenie
@@ -189,7 +214,11 @@ docker compose exec api python -m app.cli create-admin --email admin@firma.sk
 Príkaz sa dvakrát spýta na heslo (aspoň 8 znakov, pri písaní ho neuvidíš). Potom sa prihlás
 na http://localhost:5173.
 
-### Pridanie vodiča
+### Ďalší používatelia
+
+Vodiči si účet vytvoria sami: na prihlasovacej stránke kliknú na **Zaregistruj sa**.
+
+Účet vie založiť aj admin cez API, a len takto sa dá pridať ďalší admin:
 
 1. Otvor http://localhost:8000/docs a vpravo hore klikni na **Authorize**.
 2. Do `username` zadaj e-mail admina, do `password` jeho heslo a potvrď.
@@ -297,4 +326,5 @@ docker-compose.override.yml  vývojové nastavenie, Docker ho načíta automatic
 - [x] Frontend: prihlásenie, zoznam áut, pridanie, úprava, mazanie
 - [x] Servisná história áut s cenou
 - [x] Prehľad: počet áut, končiaca a neplatná STK
+- [x] Registrácia, úvodná stránka a rezervácia termínov servisu v kalendári
 - [ ] Ďalšie termíny (emisná kontrola, poistenie, diaľničná známka)

@@ -6,7 +6,7 @@ from sqlalchemy import ColumnElement, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_admin
+from app.api.deps import require_admin
 from app.db.session import get_db
 from app.models.vehicle import LICENSE_PLATE_UNIQUE, Vehicle
 from app.schemas.vehicle import (
@@ -17,11 +17,11 @@ from app.schemas.vehicle import (
     VehicleUpdate,
 )
 
-# Celý router vyžaduje prihláseného používateľa. Zápisové endpointy navyše vyžadujú admina
-# (require_admin). FastAPI si výsledok get_current_user v rámci requestu zapamätá,
-# takže token sa overí a používateľ načíta z DB len raz, aj keď ho potrebujú obe dependency.
-router = APIRouter(prefix="/vehicles", tags=["vehicles"], dependencies=[Depends(get_current_user)])
-admin_only = [Depends(require_admin)]
+# Vozový park je len pre admina, a to aj čítanie. Registrácia je verejná, takže "prihlásený"
+# už neznamená "zamestnanec firmy": bežný účet slúži len na rezerváciu termínu servisu.
+# Dependency na celom routeri platí pre všetky jeho endpointy, žiadny sa tak nedá zabudnúť.
+# require_admin si sám zavolá get_current_user: bez tokenu vráti 401, bez roly admin 403.
+router = APIRouter(prefix="/vehicles", tags=["vehicles"], dependencies=[Depends(require_admin)])
 
 # Najväčšia hodnota stĺpca INTEGER v PostgreSQL. Väčšie číslo by databáza odmietla chybou (500).
 PG_INT_MAX = 2_147_483_647
@@ -108,12 +108,7 @@ def get_vehicle(vehicle_id: int = Path(ge=1, le=PG_INT_MAX), db: Session = Depen
     return _get_or_404(db, vehicle_id)
 
 
-@router.post(
-    "",
-    response_model=VehicleRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=admin_only,
-)
+@router.post("", response_model=VehicleRead, status_code=status.HTTP_201_CREATED)
 def create_vehicle(data: VehicleCreate, db: Session = Depends(get_db)):
     vehicle = Vehicle(**data.model_dump())
     db.add(vehicle)
@@ -122,7 +117,7 @@ def create_vehicle(data: VehicleCreate, db: Session = Depends(get_db)):
     return vehicle
 
 
-@router.patch("/{vehicle_id}", response_model=VehicleRead, dependencies=admin_only)
+@router.patch("/{vehicle_id}", response_model=VehicleRead)
 def update_vehicle(
     data: VehicleUpdate,
     vehicle_id: int = Path(ge=1, le=PG_INT_MAX),
@@ -136,7 +131,7 @@ def update_vehicle(
     return vehicle
 
 
-@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=admin_only)
+@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_vehicle(vehicle_id: int = Path(ge=1, le=PG_INT_MAX), db: Session = Depends(get_db)):
     result = db.execute(delete(Vehicle).where(Vehicle.id == vehicle_id))
     db.commit()
