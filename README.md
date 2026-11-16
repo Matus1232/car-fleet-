@@ -5,9 +5,9 @@
 Webová aplikácia na správu firemných áut. Firma v nej vidí, aké autá má, a môže ich pridávať,
 upravovať a mazať.
 
-Používatelia majú dve roly. **Admin** spravuje autá a vidí všetky rezervácie servisu. **Vodič** autá
-len vidí a môže si rezervovať termín servisu. Účet vodiča si vytvorí každý sám registráciou,
-admin vzniká len príkazom v termináli.
+Používatelia majú dve roly. **Admin** spravuje autá a vidí všetky rezervácie servisu. **Vodič**
+si môže len rezervovať termín servisu, vozový park nevidí. Účet vodiča si vytvorí každý sám
+registráciou, admin vzniká len príkazom v termináli.
 
 Ku každému autu sa dá viesť servisná história: čo sa robilo, kedy a koľko to stálo.
 
@@ -21,19 +21,22 @@ emisná kontrola, poistenie a diaľničná známka.
 
 ## Čo aplikácia vie
 
-Po prihlásení sa zobrazí úvodná stránka s menu: **Vozový park** a **Termín servisu**.
+Po prihlásení sa zobrazí úvodná stránka s menu. Admin v ňom má **Vozový park** a **Rezervácie servisu**,
+vodič len **Termín servisu**.
 
-### Vozový park
+### Vozový park (len admin)
 
 Hore je prehľad: koľko áut firma má, koľkým končí STK do 30 dní a koľké sú už po STK.
 
 Pod ním je zoznam áut s ŠPZ, značkou, modelom, platnosťou STK a dátumom pridania, po 10 autách na stranu.
 Pri aute, ktorému STK končí alebo už neplatí, je pri dátume štítok. Dátum STK je nepovinný.
-Admin má pri každom aute tlačidlá Upraviť a Zmazať a nad tabuľkou tlačidlo Pridať auto.
-Vodič vidí tú istú tabuľku bez týchto tlačidiel.
+Pri každom aute sú tlačidlá Upraviť a Zmazať a nad tabuľkou tlačidlo Pridať auto.
 
 Tlačidlo Servis pri aute otvorí jeho servisné záznamy (dátum, čo sa robilo, cena) aj so súčtom,
-koľko servis auta stál dokopy. Admin môže záznamy pridávať a mazať, vodič ich len vidí.
+koľko servis auta stál dokopy. Záznamy sa dajú pridávať aj mazať.
+
+Vodič túto časť nevidí vôbec: nemá ju v menu a API mu na autá aj servis odpovie `403`.
+Registrácia je verejná, takže účet si môže založiť ktokoľvek, a firemné autá mu ukazovať nechceme.
 
 ![Formulár na pridanie auta](docs/screenshots/vehicle-form.png)
 
@@ -114,15 +117,13 @@ API podľa neho spozná, kto sa pýta, a nemusí si pamätať žiadne prihlásen
 flowchart TD
     R["Požiadavka na autá"] --> T{"Je používateľ<br>prihlásený?"}
     T -- nie --> E1["Odmietnuté<br>aplikácia ho odhlási"]
-    T -- áno --> W{"Chce niečo<br>zmeniť?"}
-    W -- nie --> OK["Dostane zoznam áut"]
-    W -- áno --> AD{"Je to admin?"}
+    T -- áno --> AD{"Je to admin?"}
     AD -- nie --> E2["Odmietnuté<br>nemá oprávnenie"]
-    AD -- áno --> OK2["Zmena sa uloží"]
+    AD -- áno --> OK["Dostane autá<br>alebo sa zmena uloží"]
 ```
 
-Skrytie tlačidiel vo frontende je len pohodlie pre vodiča. Skutočnú kontrolu robí backend,
-takže vodič auto nezmaže ani vtedy, keď pošle požiadavku priamo na API. V kóde sú to dve funkcie
+Skrytie vozového parku vo frontende je len pohodlie pre vodiča. Skutočnú kontrolu robí backend,
+takže vodič autá neuvidí ani vtedy, keď pošle požiadavku priamo na API. V kóde sú to dve funkcie
 v [`backend/app/api/deps.py`](backend/app/api/deps.py): `get_current_user` zistí, kto požiadavku
 posiela (inak `401`), a `require_admin` overí, či je to admin (inak `403`).
 

@@ -6,7 +6,7 @@ A web application for managing company cars. A company can see which cars it has
 edit and delete them.
 
 Users have two roles. An **admin** manages cars and sees all service bookings. A **driver** can only
-view cars and can book a service slot. Anyone can create a driver account by signing up;
+book a service slot and doesn't see the fleet. Anyone can create a driver account by signing up;
 an admin is only created by a terminal command.
 
 Each car has a service history: what was done, when and how much it cost.
@@ -21,21 +21,23 @@ more deadlines will come later: emissions check, insurance and motorway vignette
 
 ## Features
 
-After signing in, a welcome page shows a menu: **Vozový park** (the fleet) and **Termín servisu**
-(service slots).
+After signing in, a welcome page shows a menu. An admin has **Vozový park** (the fleet) and
+**Rezervácie servisu** (service bookings), a driver only **Termín servisu** (service slots).
 
-### Fleet
+### Fleet (admin only)
 
 An overview at the top shows how many cars the company has, how many have a technical
 inspection (STK) expiring within 30 days and how many are already past it. The inspection date is optional
 and shown in the list with a label when it is expiring or overdue.
 
-Below it, the user sees a list of cars with the licence plate, make, model and date added,
-10 cars per page. An admin has Edit and Delete buttons next to each car and an Add car button above the table.
-A driver sees the same table without these buttons.
+Below it is a list of cars with the licence plate, make, model and date added,
+10 cars per page, with Edit and Delete buttons next to each car and an Add car button above the table.
 
 The Servis button next to a car opens its service records (date, what was done, cost) with the total
-spent on servicing that car. An admin can add and delete records, a driver can only view them.
+spent on servicing that car. Records can be added and deleted.
+
+A driver doesn't see this part at all: it isn't in their menu and the API answers `403` for cars and
+service records. Anyone can sign up, so company cars shouldn't be shown to them.
 
 ![Form for adding a car](docs/screenshots/vehicle-form.png)
 
@@ -117,15 +119,13 @@ The API uses it to recognise who is asking, so it doesn't have to remember any s
 flowchart TD
     R["Request for cars"] --> T{"Is the user<br>signed in?"}
     T -- no --> E1["Rejected<br>the app signs them out"]
-    T -- yes --> W{"Do they want<br>to change something?"}
-    W -- no --> OK["Gets the list of cars"]
-    W -- yes --> AD{"Is it an admin?"}
+    T -- yes --> AD{"Is it an admin?"}
     AD -- no --> E2["Rejected<br>not allowed"]
-    AD -- yes --> OK2["Change is saved"]
+    AD -- yes --> OK["Gets the cars<br>or the change is saved"]
 ```
 
-Hiding buttons in the frontend is only a convenience for the driver. The real check happens in the backend,
-so a driver can't delete a car even by sending a request straight to the API. In the code these are two functions
+Hiding the fleet in the frontend is only a convenience for the driver. The real check happens in the backend,
+so a driver can't see the cars even by sending a request straight to the API. In the code these are two functions
 in [`backend/app/api/deps.py`](backend/app/api/deps.py): `get_current_user` finds out who is sending
 the request (otherwise `401`), and `require_admin` checks that it's an admin (otherwise `403`).
 

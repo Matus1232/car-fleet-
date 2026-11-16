@@ -62,7 +62,7 @@ function App() {
               // NavLink je Link, ktorý vie, či ukazuje na práve otvorenú stránku: vtedy dostane
               // triedu "active" a aria-current="page". CSS podľa toho kreslí čiaru pod odkazom.
               <nav className="nav" aria-label="Stránky">
-                <NavLink to="/vehicles">Vozidlá</NavLink>
+                {isAdmin && <NavLink to="/vehicles">Vozidlá</NavLink>}
                 <NavLink to="/bookings">Servis</NavLink>
               </nav>
             )}
@@ -98,7 +98,18 @@ function App() {
             <Route path="/" element={<HomePage user={user} />} />
             <Route
               path="/vehicles"
-              element={<VehiclesPage token={token} isAdmin={isAdmin} onUnauthorized={handleLogout} />}
+              element={
+                // Vozový park je len pre admina. Kým nevieme, kto je prihlásený (user je null),
+                // ukážeme načítavanie, inak by sme admina po obnovení stránky omylom presmerovali.
+                // Je to len pohodlie: backend by bežnému účtu aj tak vrátil 403.
+                user === null ? (
+                  <p className="loading">Načítavam…</p>
+                ) : isAdmin ? (
+                  <VehiclesPage token={token} isAdmin={isAdmin} onUnauthorized={handleLogout} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
             />
             <Route
               path="/bookings"

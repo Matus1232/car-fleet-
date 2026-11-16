@@ -25,11 +25,14 @@ function HomePage({ user }: Props) {
 
       {/* <Link> vyzerá ako odkaz (<a>), ale stránku neobnoví: React Router len vymení obsah. */}
       <nav className="menu" aria-label="Hlavné menu">
-        <Link className="menu-card cars" to="/vehicles">
-          <span className="menu-title">Vozový park</span>
-          <span className="menu-text">Zoznam áut, platnosť STK a servisná história.</span>
-          <span className="menu-go">Otvoriť →</span>
-        </Link>
+        {/* Vozový park vidí len admin, bežný účet slúži len na rezerváciu servisu. */}
+        {isAdmin && (
+          <Link className="menu-card cars" to="/vehicles">
+            <span className="menu-title">Vozový park</span>
+            <span className="menu-text">Zoznam áut, platnosť STK a servisná história.</span>
+            <span className="menu-go">Otvoriť →</span>
+          </Link>
+        )}
 
         <Link className="menu-card calendar-card" to="/bookings">
           <span className="menu-title">{isAdmin ? 'Rezervácie servisu' : 'Termín servisu'}</span>

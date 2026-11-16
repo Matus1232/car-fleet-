@@ -73,14 +73,14 @@ zobrazený mesiac, otvorený deň a rezervácie `BookingsPage`.
 | `/login` | prihlásenie |
 | `/register` | registrácia nového účtu |
 | `/` | úvodná stránka s menu |
-| `/vehicles` | zoznam áut |
+| `/vehicles` | zoznam áut, len pre admina (ostatných presmeruje na `/`) |
 | `/bookings` | kalendár s termínmi servisu |
 | hocičo iné | prihláseného presmeruje na `/`, neprihláseného na `/login` |
 
 Prihlásený sa na `/login` a `/register` nedostane (presmeruje ho na `/`), neprihlásený vidí len tieto dve stránky.
 
-Tlačidlá na pridanie, úpravu a mazanie vidí len admin. Je to len pohodlie pre používateľa,
-skutočnú kontrolu oprávnení robí backend (vodičovi vráti `403`).
+Vozový park (karta v menu, odkaz v hlavičke aj stránka `/vehicles`) vidí len admin. Je to len
+pohodlie pre používateľa, skutočnú kontrolu oprávnení robí backend (vodičovi vráti `403`).
 
 Pastelové farby termínov sú v `index.css` zapísané cez `oklch()`: každá hodina má vlastný odtieň
 (posiela ho `slots.ts` v premennej `--hue`), svetlosť a sýtosť majú všetky rovnakú.
