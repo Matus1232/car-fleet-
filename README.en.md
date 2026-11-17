@@ -34,6 +34,63 @@ flowchart LR
 Only the frontend is publicly reachable. nginx serves the React app to the browser and forwards
 requests for `/api` to the backend. Neither the backend nor the database has a public address.
 
+## Database
+
+```mermaid
+erDiagram
+    users ||--o{ bookings : "books"
+    vehicles ||--o{ service_records : "has"
+
+    users {
+        int id PK
+        string email UK
+        string hashed_password "Argon2 hash"
+        string role "admin or driver"
+        datetime created_at
+    }
+    bookings {
+        int id PK
+        int user_id FK
+        date booking_date "unique together with hour"
+        smallint hour "8 to 16"
+        string note "optional"
+        datetime created_at
+    }
+    vehicles {
+        int id PK
+        string brand
+        string model
+        string license_plate UK "normalized plate"
+        date stk_valid_until "optional"
+        datetime created_at
+    }
+    service_records {
+        int id PK
+        int vehicle_id FK
+        string description
+        numeric cost "not negative"
+        date service_date
+        datetime created_at
+    }
+    revoked_tokens {
+        string jti PK "ID of a signed-out token"
+        datetime expires_at
+    }
+    rate_limit_hits {
+        int id PK
+        string scope "login or register"
+        string key "IP address"
+        datetime created_at
+    }
+```
+
+- A user can have many bookings, a car many service records. Deleting a user or a car also deletes
+  their bookings or records (`ON DELETE CASCADE`).
+- The day and hour pair is unique (`UNIQUE`). The database enforces it, so a slot can't be booked
+  twice even when two people click at the same moment.
+- `revoked_tokens` and `rate_limit_hits` aren't related to the other tables. They support signing out
+  and limiting sign-in and sign-up attempts.
+
 ## Tech stack
 
 | Part | What's used |
