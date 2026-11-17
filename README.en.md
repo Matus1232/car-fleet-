@@ -2,391 +2,60 @@
 
 [Slovenčina](README.md) | **English**
 
-A web application for managing company cars. A company can see which cars it has and add,
-edit and delete them.
+A web application for managing company cars and booking service appointments.
 
-Users have two roles. An **admin** manages cars and sees all service bookings. A **driver** can only
-book a service slot and doesn't see the fleet. Anyone can create a driver account by signing up;
-an admin is only created by a terminal command.
-
-Each car has a service history: what was done, when and how much it cost.
-
-A driver picks a service slot in a calendar: they click a day and book a free hour.
-The admin sees who is coming and when.
-
-This is the first version (MVP). For now each car tracks the validity of its technical inspection (STK);
-more deadlines will come later: emissions check, insurance and motorway vignette.
-
-![List of cars in the application](docs/screenshots/vehicles-admin.png)
+**Live:** https://fearless-rebirth-production-132141c8.up.railway.app
 
 ## Features
 
-After signing in, a welcome page shows a menu. An admin has **Vozový park** (the fleet) and
-**Rezervácie servisu** (service bookings), a driver **Termín servisu** (service slots). Both also see
-**Cenník** (a price list of services) and **E-shop**, which is still being prepared.
+- **Sign-up and sign-in.** Anyone can create an account. An admin can only be created with a command on the server.
+- **Service booking.** A monthly calendar; clicking a day shows hourly slots from 8:00 to 17:00.
+  A slot can't be booked twice.
+- **Bookings for the admin.** The admin sees who is coming and when, including the note, and can cancel bookings.
+- **Fleet (admin only).** Cars with technical inspection (STK) validity, service history with costs, and an
+  overview of cars whose inspection is expiring or overdue.
+- **Price list** of services and an **e-shop** (coming soon).
 
-### Fleet (admin only)
-
-An overview at the top shows how many cars the company has, how many have a technical
-inspection (STK) expiring within 30 days and how many are already past it. The inspection date is optional
-and shown in the list with a label when it is expiring or overdue.
-
-Below it is a list of cars with the licence plate, make, model and date added,
-10 cars per page, with Edit and Delete buttons next to each car and an Add car button above the table.
-
-The Servis button next to a car opens its service records (date, what was done, cost) with the total
-spent on servicing that car. Records can be added and deleted.
-
-A driver doesn't see this part at all: it isn't in their menu and the API answers `403` for cars and
-service records. Anyone can sign up, so company cars shouldn't be shown to them.
-
-![Form for adding a car](docs/screenshots/vehicle-form.png)
-
-### Service slots
-
-The page shows a calendar of the whole month. Every working day shows the number of free slots.
-Clicking a day shows its hourly slots from 8:00 to 17:00, each in its own coloured box. A free slot
-can be booked with a note for the garage, for example which car it's about.
-Booking is possible from Monday to Friday, at most 60 days ahead.
-
-Below the calendar a driver has a list of their bookings and can cancel them. Other people's slots
-are shown only as taken. The admin sees everyone's bookings in the calendar and in the list, with
-the e-mail and note, and can cancel any of them.
-
-### Price list and e-shop
-
-The price list shows approximate prices of common services (oil change, diagnostics, tyre change, ...)
-with a link to book a slot. The prices are hard-coded in the frontend, in
-[`PriceListPage.tsx`](frontend/src/components/PriceListPage.tsx). The e-shop only announces that it's
-being prepared.
-
-A few things that aren't visible at first glance:
-
-- **Licence plates are stored in one format.** `ba 123-ab`, `BA 123 AB` and `BA123AB` are the same
-  car for the application, so it can't be entered twice.
-- **Refreshing the page doesn't sign anyone out.** A session lasts 30 minutes (configurable in `.env`). When it expires,
-  the application sends the user back to the sign-in page on their next action.
-- **Not even an injected script can steal the token.** The browser keeps it in an httpOnly cookie that
-  JavaScript on the page can't read. See [Signing in](#signing-in).
-- **Signing out takes effect immediately.** A signed-out token stops working at once, even if someone copied it.
-- **Passwords can't be guessed forever.** After 10 failed attempts from one IP address,
-  signing in from it is blocked for 15 minutes. Attempts are stored in the database, so even
-  restarting the application doesn't reset them.
-- **Passwords aren't stored.** The database only keeps their hash (Argon2), from which the original
-  password can't be recovered.
-- **Signing up never creates an admin.** People don't choose their role; a new account is always a driver.
-  One IP address can create at most 10 accounts per hour.
-- **A slot can't be booked twice.** The database itself enforces it, so when two people click
-  the same slot at the same moment, only one succeeds.
-
-## How it's built
-
-The application has two separate parts that talk to each other over HTTP:
-
-- **Backend (API)** in Python with the FastAPI framework. It stores data in PostgreSQL via SQLAlchemy
-  and manages database changes with Alembic migrations.
-- **Frontend** in React and TypeScript, built with Vite.
-
-Everything runs in Docker: the database, the API and the web server with the frontend are three containers
-started by a single command. Backend tests run in GitHub Actions after every push to `main` and on
-every pull request.
+## Architecture
 
 ```mermaid
 flowchart LR
-    F["App<br>in the browser"] -- "page and /api" --> W["Web server<br>port 5173"]
-    W -- "/api" --> A["API<br>port 8000"]
-    A -- "reads and writes" --> D[("Database")]
+    U["Browser"] -- "HTTPS" --> R["Railway<br>(TLS, real client IP)"]
+    R --> N["nginx<br>React app"]
+    N -- "/api" --> A["FastAPI<br>backend"]
+    A --> D[("PostgreSQL")]
+
+    subgraph S["Railway private network"]
+        A
+        D
+    end
 ```
 
-The browser talks to a single address. The web server sends it the application and forwards
-requests for `/api/...` to the API (`/api/vehicles` → `/vehicles`): Vite does this in development,
-nginx in production. The API can't be reached from outside directly, and the token cookie can be as strict as possible.
+Only the frontend is publicly reachable. nginx serves the React app to the browser and forwards
+requests for `/api` to the backend. Neither the backend nor the database has a public address.
 
-### Signing in
+## Tech stack
 
-```mermaid
-sequenceDiagram
-    actor U as User
-    participant F as App
-    participant A as API
-    participant D as Database
-
-    U->>F: enters e-mail and password
-    F->>A: sends credentials
-    A->>D: looks up the user
-    A->>A: verifies the password
-    A-->>F: token in an httpOnly cookie
-    F->>A: who am I? (the browser attaches the cookie itself)
-    A-->>F: e-mail and role
-    F->>A: give me the first 10 cars
-    A-->>F: list of cars
-```
-
-The token is a signed "pass" (JWT). The API uses it to recognise who is asking, so it doesn't have to
-remember any sessions. Where the token lives and how it's revoked:
-
-| What | How | Why |
-|---|---|---|
-| The token is in an **httpOnly cookie** | JavaScript can't read it, the browser attaches it by itself | an injected script (XSS) can't steal it |
-| The cookie is **SameSite=Strict** and **Secure** | sent only to our own site and only over HTTPS | other sites can't use it and it can't be sniffed on the way |
-| Changes made with the cookie need an **`X-Requested-With`** header | our frontend always sends it, a foreign form can't add it | second guard against CSRF (another site sending a request on your behalf) |
-| **Signing out** stores the token's ID in the `revoked_tokens` table | the API rejects that token from then on | signing out works immediately, not only when the token expires after 30 minutes |
-| A strict **Content-Security-Policy** from nginx | the browser runs only scripts from our own address | another layer of XSS protection |
-
-Swagger (`/docs`) and the tests still send the token in an `Authorization: Bearer` header. The browser never
-adds that header by itself, so it doesn't need the `X-Requested-With` check.
-
-### Who can do what
-
-```mermaid
-flowchart TD
-    R["Request for cars"] --> T{"Is the user<br>signed in?"}
-    T -- no --> E1["Rejected<br>the app signs them out"]
-    T -- yes --> AD{"Is it an admin?"}
-    AD -- no --> E2["Rejected<br>not allowed"]
-    AD -- yes --> OK["Gets the cars<br>or the change is saved"]
-```
-
-Hiding the fleet in the frontend is only a convenience for the driver. The real check happens in the backend,
-so a driver can't see the cars even by sending a request straight to the API. In the code these are two functions
-in [`backend/app/api/deps.py`](backend/app/api/deps.py): `get_current_user` finds out who is sending
-the request (otherwise `401`), and `require_admin` checks that it's an admin (otherwise `403`).
-
-Bookings work a little differently: any signed-in user can book, and can cancel only their own booking
-(an admin can cancel any). Who booked a slot and what they wrote is sent only to the owner and the admin.
-
-### Database
-
-| Table | Contents |
+| Part | What's used |
 |---|---|
-| `users` | e-mail (unique), password hash, role (`admin` or `driver`), creation date |
-| `vehicles` | make, model, licence plate (unique), inspection validity (optional), date added |
-| `service_records` | which car it belongs to, what was done, cost, service date |
-| `bookings` | who booked the slot, day, hour (each day and hour pair only once), note |
+| Backend | Python, FastAPI, SQLAlchemy, Alembic (migrations), PostgreSQL |
+| Frontend | React, TypeScript, Vite, React Router, plain CSS |
+| Operations | Docker, nginx, Railway, GitHub Actions (tests and linting on every push) |
 
-Each service record belongs to one car. Deleting a car also deletes its records.
-A booking belongs to one user and is deleted together with them.
-Cars aren't assigned to a specific driver yet.
+## Security
 
-## Getting started
+- Passwords are stored only as a hash (Argon2).
+- The token (JWT) lives in an **httpOnly cookie** that JavaScript on the page can't read. The cookie is
+  `Secure` and `SameSite=Strict`, and changes also require a CSRF header.
+- **Signing out** revokes the token immediately, not only when it expires.
+- Password guessing and mass sign-ups are **rate limited per IP address**. Attempts are stored in the
+  database, so the limit survives restarts.
+- Permissions are enforced by the backend (`401` when signed out, `403` when not allowed), not just by hidden buttons.
+- nginx enforces HTTPS and sends security headers (HSTS, Content-Security-Policy).
 
-You only need [Docker Desktop](https://www.docker.com/products/docker-desktop/) (it must be running)
-and [Git](https://git-scm.com/). There's no need to install Python or Node.js; everything runs in containers.
-
-### 1. Clone the project
-
-```bash
-git clone https://github.com/Matus1232/car-fleet-.git
-```
-
-Run the following commands in the project folder (`cd car-fleet-`).
-
-### 2. Create a `.env` file
-
-In the project folder, create a file named exactly `.env` (make sure Notepad doesn't turn it
-into `.env.txt`) with this content:
+## Structure
 
 ```
-POSTGRES_USER=carfleet
-POSTGRES_PASSWORD=change-me
-POSTGRES_DB=carfleet
-SECRET_KEY=
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+backend/    API: endpoints, database models, migrations, tests
+frontend/   React app and nginx
 ```
-
-| Variable | Purpose |
-|---|---|
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | user, password and name of the database created on first start |
-| `SECRET_KEY` | secret key for signing tokens, at least 32 characters |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | how long a session lasts |
-
-The file contains passwords, so it's in `.gitignore` and never gets into Git.
-
-### 3. Generate a secret key
-
-```bash
-docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-On the first run Docker downloads a Python image and then prints 64 random characters. Copy them into `.env` after `SECRET_KEY=`. Without the key the application
-won't start; Docker prints the error `SECRET_KEY must be set in .env`.
-
-### 4. Start the application
-
-```bash
-docker compose up --build
-```
-
-The first start takes a few minutes because Docker downloads and builds all the containers. The application is ready
-when `Application startup complete` appears in the output. Database tables are created automatically.
-
-| Address | What's there |
-|---|---|
-| http://localhost:5173 | the application |
-| http://localhost:8000/docs | API documentation, where you can also try the API directly |
-| http://localhost:8000/health | quick check that the API and database are running |
-
-### 5. Create the first admin
-
-The database starts empty and nobody can sign in, so you create the first admin from the terminal.
-Open a second terminal (the first one keeps the application running) and run this in the project folder:
-
-```bash
-docker compose exec api python -m app.cli create-admin --email admin@company.com
-```
-
-The command asks for the password twice (at least 8 characters; you won't see it as you type). Then sign in
-at http://localhost:5173.
-
-### More users
-
-Drivers create their own account: on the sign-in page they click **Zaregistruj sa** (Sign up).
-
-An admin can also create an account through the API, and this is the only way to add another admin:
-
-1. Open http://localhost:8000/docs and click **Authorize** in the top right.
-2. Enter the admin's e-mail as `username` and their password as `password`, then confirm.
-3. Expand **POST /users**, click **Try it out**, paste the data and click **Execute**:
-
-```json
-{ "email": "driver@company.com", "password": "password1234", "role": "driver" }
-```
-
-If you write `admin` instead of `driver`, you create another admin.
-
-### Stopping
-
-Stop the application with `Ctrl+C` in the terminal where it's running, or with `docker compose down`.
-Data in the database stays saved after stopping. To wipe it completely and start over,
-use `docker compose down -v`.
-
-### Development and production mode
-
-`docker compose up` starts development mode. Docker automatically loads
-`docker-compose.override.yml` with it. Code changes take effect right away: the frontend reloads in the browser
-and the API restarts by itself.
-
-`docker compose -f docker-compose.yml up -d` runs the application the way it would run on a server.
-The frontend is built ahead of time into static files served by nginx, the API runs without automatic
-restarts, and the documentation at `/docs` is turned off. In this mode the token cookie is HTTPS-only
-(`Secure`). Chrome and Firefox allow it on `http://localhost`, other browsers may not.
-
-## Deploying to Railway
-
-On [Railway](https://railway.com), create three services in one project:
-
-1. **PostgreSQL** from the database menu.
-2. **Backend** from this repository, folder `backend`. Railway finds the `Dockerfile` by itself.
-3. **Frontend** from this repository, folder `frontend`.
-
-**Give a public domain (Generate Domain) only to the frontend.** The backend must be reachable only
-through Railway's private network. Otherwise anyone could send a fake `X-Real-IP` header and get around
-the password-guessing limit.
-
-Backend environment variables:
-
-| Variable | Value |
-|---|---|
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}`, Railway fills in the database address (the app adjusts it for the psycopg driver) |
-| `SECRET_KEY` | a new random key (see [step 3](#3-generate-a-secret-key)), not the one from `.env` |
-| `CLIENT_IP_HEADER` | `X-Real-IP`, Railway sends the visitor's real IP in it |
-
-Frontend environment variable:
-
-| Variable | Value |
-|---|---|
-| `API_UPSTREAM` | the backend's private address, e.g. `http://backend.railway.internal:8000` (depends on the service name) |
-
-Railway sets `PORT` by itself. Railway handles HTTPS: nginx redirects `http://` to `https://` and sends
-an HSTS header so the browser goes straight to HTTPS next time. Database migrations run every time the
-backend starts. Create the first admin with `python -m app.cli create-admin` in the backend service's
-terminal (Railway CLI: `railway ssh`).
-
-## Tests
-
-The backend has tests in the `backend/tests` folder. They run outside Docker, so they need
-[Python](https://www.python.org/downloads/) 3.12 or newer. The tests wipe tables on every run, so they
-use their own database to avoid deleting the application's data.
-
-Create the test database once, while the application is running:
-
-```bash
-docker compose exec db psql -U carfleet -d postgres -c "CREATE DATABASE carfleet_test"
-```
-
-Then install the libraries in the `backend` folder:
-
-```bash
-pip install -r requirements.txt -r requirements-dev.txt
-```
-
-Run the tests in PowerShell like this:
-
-```powershell
-$env:TEST_DATABASE_URL="postgresql+psycopg://carfleet:change-me@127.0.0.1:5432/carfleet_test"; pytest
-```
-
-In Git Bash, on Linux or on macOS like this:
-
-```bash
-TEST_DATABASE_URL=postgresql+psycopg://carfleet:change-me@127.0.0.1:5432/carfleet_test pytest
-```
-
-If your `.env` has a different database user or password, change them in these commands too. The address is
-deliberately `127.0.0.1` and not `localhost`. On Windows, `localhost` is tried over IPv6 first, which
-slows down every database connection so much that the tests take minutes instead of seconds.
-
-GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs a code check (ruff), the tests
-and a migration check, and builds the backend Docker image on every push to `main`
-and on every pull request. The frontend isn't in CI yet.
-
-## Frontend without Docker
-
-When working on the frontend, you can also run it directly with [Node.js](https://nodejs.org) (LTS version).
-The database and API keep running in Docker. First stop the frontend container, because it occupies
-port 5173:
-
-```bash
-docker compose stop web
-```
-
-Then in the `frontend` folder:
-
-| Command | What it does |
-|---|---|
-| `npm install` | installs libraries (the first time and after `package.json` changes) |
-| `npm run dev` | starts the dev server; code changes show up in the browser right away |
-| `npm run build` | checks types and builds the production version into `dist/` |
-| `npm run lint` | checks the code (oxlint) |
-
-Vite forwards requests for `/api` to `http://localhost:8000` (configured in
-[`frontend/vite.config.ts`](frontend/vite.config.ts)). If you also run the backend outside Docker, add
-`COOKIE_SECURE=false` to `.env`, because there's no HTTPS locally.
-A description of the individual frontend files is in [frontend/README.md](frontend/README.md) (in Slovak).
-
-## Project structure
-
-```
-backend/                     API: endpoints, database models, migrations, tests
-frontend/                    React application
-docs/                        screenshots for the README
-.github/                     CI and automatic dependency updates (Dependabot)
-docker-compose.yml           database, API and frontend
-docker-compose.override.yml  development settings, loaded by Docker automatically
-```
-
-## Project status
-
-- [x] Docker Compose, PostgreSQL, database migrations
-- [x] API for managing cars
-- [x] Sign-in, roles and protection against password guessing
-- [x] Token in an httpOnly cookie, sign-out that revokes the token, rate limiter in the database
-- [x] Ready for Railway (nginx proxy, HTTPS, security headers)
-- [x] Backend tests and CI
-- [x] Frontend: sign-in, car list, adding, editing, deleting
-- [x] Car service history with costs
-- [x] Overview: number of cars, expiring and overdue technical inspections
-- [x] Sign-up, welcome page and booking service slots in a calendar
-- [x] Price list of services
-- [ ] E-shop
-- [ ] More deadlines (emissions check, insurance, motorway vignette)
