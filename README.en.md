@@ -22,7 +22,8 @@ more deadlines will come later: emissions check, insurance and motorway vignette
 ## Features
 
 After signing in, a welcome page shows a menu. An admin has **Vozový park** (the fleet) and
-**Rezervácie servisu** (service bookings), a driver only **Termín servisu** (service slots).
+**Rezervácie servisu** (service bookings), a driver **Termín servisu** (service slots). Both also see
+**Cenník** (a price list of services) and **E-shop**, which is still being prepared.
 
 ### Fleet (admin only)
 
@@ -52,14 +53,25 @@ Below the calendar a driver has a list of their bookings and can cancel them. Ot
 are shown only as taken. The admin sees everyone's bookings in the calendar and in the list, with
 the e-mail and note, and can cancel any of them.
 
+### Price list and e-shop
+
+The price list shows approximate prices of common services (oil change, diagnostics, tyre change, ...)
+with a link to book a slot. The prices are hard-coded in the frontend, in
+[`PriceListPage.tsx`](frontend/src/components/PriceListPage.tsx). The e-shop only announces that it's
+being prepared.
+
 A few things that aren't visible at first glance:
 
 - **Licence plates are stored in one format.** `ba 123-ab`, `BA 123 AB` and `BA123AB` are the same
   car for the application, so it can't be entered twice.
 - **Refreshing the page doesn't sign anyone out.** A session lasts 30 minutes (configurable in `.env`). When it expires,
   the application sends the user back to the sign-in page on their next action.
+- **Not even an injected script can steal the token.** The browser keeps it in an httpOnly cookie that
+  JavaScript on the page can't read. See [Signing in](#signing-in).
+- **Signing out takes effect immediately.** A signed-out token stops working at once, even if someone copied it.
 - **Passwords can't be guessed forever.** After 10 failed attempts from one IP address,
-  signing in from it is blocked for 15 minutes.
+  signing in from it is blocked for 15 minutes. Attempts are stored in the database, so even
+  restarting the application doesn't reset them.
 - **Passwords aren't stored.** The database only keeps their hash (Argon2), from which the original
   password can't be recovered.
 - **Signing up never creates an admin.** People don't choose their role; a new account is always a driver.
@@ -81,13 +93,14 @@ every pull request.
 
 ```mermaid
 flowchart LR
-    W["Web server<br>port 5173"] -. "sends the app" .-> F["App<br>in the browser"]
-    F -- "requests with a token" --> A["API<br>port 8000"]
+    F["App<br>in the browser"] -- "page and /api" --> W["Web server<br>port 5173"]
+    W -- "/api" --> A["API<br>port 8000"]
     A -- "reads and writes" --> D[("Database")]
 ```
 
-The web server sends the application to the browser only once, when the page is opened. After that,
-the application talks only to the API: it asks for cars, sends changes and gets data back.
+The browser talks to a single address. The web server sends it the application and forwards
+requests for `/api/...` to the API (`/api/vehicles` → `/vehicles`): Vite does this in development,
+nginx in production. The API can't be reached from outside directly, and the token cookie can be as strict as possible.
 
 ### Signing in
 
@@ -102,16 +115,26 @@ sequenceDiagram
     F->>A: sends credentials
     A->>D: looks up the user
     A->>A: verifies the password
-    A-->>F: returns a token
-    F->>F: stores the token
-    F->>A: who am I?
+    A-->>F: token in an httpOnly cookie
+    F->>A: who am I? (the browser attaches the cookie itself)
     A-->>F: e-mail and role
     F->>A: give me the first 10 cars
     A-->>F: list of cars
 ```
 
-The token is a signed "pass" that the application sends with every request from then on.
-The API uses it to recognise who is asking, so it doesn't have to remember any sessions.
+The token is a signed "pass" (JWT). The API uses it to recognise who is asking, so it doesn't have to
+remember any sessions. Where the token lives and how it's revoked:
+
+| What | How | Why |
+|---|---|---|
+| The token is in an **httpOnly cookie** | JavaScript can't read it, the browser attaches it by itself | an injected script (XSS) can't steal it |
+| The cookie is **SameSite=Strict** and **Secure** | sent only to our own site and only over HTTPS | other sites can't use it and it can't be sniffed on the way |
+| Changes made with the cookie need an **`X-Requested-With`** header | our frontend always sends it, a foreign form can't add it | second guard against CSRF (another site sending a request on your behalf) |
+| **Signing out** stores the token's ID in the `revoked_tokens` table | the API rejects that token from then on | signing out works immediately, not only when the token expires after 30 minutes |
+| A strict **Content-Security-Policy** from nginx | the browser runs only scripts from our own address | another layer of XSS protection |
+
+Swagger (`/docs`) and the tests still send the token in an `Authorization: Bearer` header. The browser never
+adds that header by itself, so it doesn't need the `X-Requested-With` check.
 
 ### Who can do what
 
@@ -167,7 +190,6 @@ into `.env.txt`) with this content:
 POSTGRES_USER=carfleet
 POSTGRES_PASSWORD=change-me
 POSTGRES_DB=carfleet
-CORS_ORIGINS=http://localhost:5173
 SECRET_KEY=
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
@@ -175,7 +197,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 | Variable | Purpose |
 |---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | user, password and name of the database created on first start |
-| `CORS_ORIGINS` | the address the browser is allowed to call the API from; without it the browser blocks requests |
 | `SECRET_KEY` | secret key for signing tokens, at least 32 characters |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | how long a session lasts |
 
@@ -247,7 +268,39 @@ and the API restarts by itself.
 
 `docker compose -f docker-compose.yml up -d` runs the application the way it would run on a server.
 The frontend is built ahead of time into static files served by nginx, the API runs without automatic
-restarts, and the documentation at `/docs` is turned off.
+restarts, and the documentation at `/docs` is turned off. In this mode the token cookie is HTTPS-only
+(`Secure`). Chrome and Firefox allow it on `http://localhost`, other browsers may not.
+
+## Deploying to Railway
+
+On [Railway](https://railway.com), create three services in one project:
+
+1. **PostgreSQL** from the database menu.
+2. **Backend** from this repository, folder `backend`. Railway finds the `Dockerfile` by itself.
+3. **Frontend** from this repository, folder `frontend`.
+
+**Give a public domain (Generate Domain) only to the frontend.** The backend must be reachable only
+through Railway's private network. Otherwise anyone could send a fake `X-Real-IP` header and get around
+the password-guessing limit.
+
+Backend environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}`, Railway fills in the database address (the app adjusts it for the psycopg driver) |
+| `SECRET_KEY` | a new random key (see [step 3](#3-generate-a-secret-key)), not the one from `.env` |
+| `CLIENT_IP_HEADER` | `X-Real-IP`, Railway sends the visitor's real IP in it |
+
+Frontend environment variable:
+
+| Variable | Value |
+|---|---|
+| `API_UPSTREAM` | the backend's private address, e.g. `http://backend.railway.internal:8000` (depends on the service name) |
+
+Railway sets `PORT` by itself. Railway handles HTTPS: nginx redirects `http://` to `https://` and sends
+an HSTS header so the browser goes straight to HTTPS next time. Database migrations run every time the
+backend starts. Create the first admin with `python -m app.cli create-admin` in the backend service's
+terminal (Railway CLI: `railway ssh`).
 
 ## Tests
 
@@ -306,7 +359,9 @@ Then in the `frontend` folder:
 | `npm run build` | checks types and builds the production version into `dist/` |
 | `npm run lint` | checks the code (oxlint) |
 
-The API address is hard-coded in [`frontend/src/api.ts`](frontend/src/api.ts) (`http://localhost:8000`).
+Vite forwards requests for `/api` to `http://localhost:8000` (configured in
+[`frontend/vite.config.ts`](frontend/vite.config.ts)). If you also run the backend outside Docker, add
+`COOKIE_SECURE=false` to `.env`, because there's no HTTPS locally.
 A description of the individual frontend files is in [frontend/README.md](frontend/README.md) (in Slovak).
 
 ## Project structure
@@ -325,9 +380,13 @@ docker-compose.override.yml  development settings, loaded by Docker automaticall
 - [x] Docker Compose, PostgreSQL, database migrations
 - [x] API for managing cars
 - [x] Sign-in, roles and protection against password guessing
+- [x] Token in an httpOnly cookie, sign-out that revokes the token, rate limiter in the database
+- [x] Ready for Railway (nginx proxy, HTTPS, security headers)
 - [x] Backend tests and CI
 - [x] Frontend: sign-in, car list, adding, editing, deleting
 - [x] Car service history with costs
 - [x] Overview: number of cars, expiring and overdue technical inspections
 - [x] Sign-up, welcome page and booking service slots in a calendar
+- [x] Price list of services
+- [ ] E-shop
 - [ ] More deadlines (emissions check, insurance, motorway vignette)

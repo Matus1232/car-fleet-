@@ -4,7 +4,9 @@ import { Link } from 'react-router'
 import { errorMessage, login } from '../api'
 
 type Props = {
-  onLogin: (token: string) => void
+  // Volá sa po úspešnom prihlásení. Token sem neposielame: je v httpOnly cookie,
+  // ktorú si prehliadač uložil sám a JavaScript ju nevidí.
+  onLogin: () => Promise<void>
 }
 
 function LoginForm({ onLogin }: Props) {
@@ -18,8 +20,8 @@ function LoginForm({ onLogin }: Props) {
     setError(null)
     setLoading(true)
     try {
-      const token = await login(email, password)
-      onLogin(token)
+      await login(email, password)
+      await onLogin()
     } catch (err) {
       setError(errorMessage(err))
     } finally {

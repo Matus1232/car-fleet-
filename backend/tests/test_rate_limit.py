@@ -1,11 +1,15 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 
 from app.core.config import settings
 from app.core.rate_limit import RateLimiter, RateLimitExceeded
+from app.db.session import SessionLocal
 from app.main import app
+from app.models.rate_limit_hit import RateLimitHit
 from tests.conftest import PASSWORD
 
 
@@ -13,13 +17,13 @@ class FakeClock:
     """Hodiny, ktoré sa posúvajú len keď povieme, takže test nemusí naozaj čakať."""
 
     def __init__(self) -> None:
-        self.now = 1000.0
+        self.now = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 
-    def __call__(self) -> float:
+    def __call__(self) -> datetime:
         return self.now
 
     def advance(self, seconds: float) -> None:
-        self.now += seconds
+        self.now += timedelta(seconds=seconds)
 
 
 @pytest.fixture
@@ -29,7 +33,12 @@ def clock():
 
 @pytest.fixture
 def limiter(clock):
-    return RateLimiter(max_attempts=3, window_seconds=60, clock=clock)
+    return RateLimiter("test", max_attempts=3, window_seconds=60, clock=clock)
+
+
+def stored_hits() -> int:
+    with SessionLocal() as db:
+        return db.scalar(select(func.count()).select_from(RateLimitHit))
 
 
 # --- Samotný RateLimiter ---
@@ -74,8 +83,28 @@ def test_keys_are_independent(limiter):
     limiter.acquire("someone-else")
 
 
+def test_scopes_are_independent(clock):
+    # Prihlásenie a registrácia majú jednu tabuľku, ale počítadlá sa nesmú miešať.
+    login = RateLimiter("login", max_attempts=1, window_seconds=60, clock=clock)
+    register = RateLimiter("register", max_attempts=1, window_seconds=60, clock=clock)
+    login.acquire("ip")
+    register.acquire("ip")
+    with pytest.raises(RateLimitExceeded):
+        login.acquire("ip")
+
+
+def test_attempts_survive_new_limiter_instance(limiter, clock):
+    # Pokusy sú v databáze: nový objekt (ako po reštarte aplikácie alebo v inom procese)
+    # o nich vie a limit platí ďalej.
+    for _ in range(3):
+        limiter.acquire("ip")
+    after_restart = RateLimiter("test", max_attempts=3, window_seconds=60, clock=clock)
+    with pytest.raises(RateLimitExceeded):
+        after_restart.acquire("ip")
+
+
 def test_concurrent_requests_cannot_exceed_limit(clock):
-    limiter = RateLimiter(max_attempts=5, window_seconds=60, clock=clock)
+    limiter = RateLimiter("test", max_attempts=5, window_seconds=60, clock=clock)
 
     def try_once(_):
         try:
@@ -84,25 +113,28 @@ def test_concurrent_requests_cannot_exceed_limit(clock):
         except RateLimitExceeded:
             return False
 
-    with ThreadPoolExecutor(max_workers=20) as pool:
-        results = list(pool.map(try_once, range(100)))
+    # Menej vlákien než spojení v pooli SQLAlchemy (5 + 10), aby na seba nečakali zbytočne dlho.
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        results = list(pool.map(try_once, range(40)))
     assert results.count(True) == 5
 
 
-def test_old_keys_are_forgotten(limiter, clock):
-    for i in range(100):
+def test_old_attempts_are_deleted(limiter, clock):
+    for i in range(20):
         limiter.acquire(f"10.0.0.{i}")
-    assert limiter.tracked_keys() == 100
+    assert stored_hits() == 20
     clock.advance(61)
     limiter.acquire("new-ip")  # spustí upratovanie
-    assert limiter.tracked_keys() == 1
+    assert stored_hits() == 1
 
 
 # --- Endpoint /auth/token ---
 
 
-def login(client, password, email="jan@example.com"):
-    return client.post("/auth/token", data={"username": email, "password": password})
+def login(client, password, email="jan@example.com", headers=None):
+    return client.post(
+        "/auth/token", data={"username": email, "password": password}, headers=headers
+    )
 
 
 def test_too_many_failed_logins_return_429(client, make_user):
@@ -130,3 +162,21 @@ def test_limit_is_per_ip(client, make_user):
 
     with TestClient(app, client=("10.0.0.2", 50000)) as other:
         assert login(other, PASSWORD).status_code == 200
+
+
+def test_ip_header_is_ignored_unless_configured(client, make_user):
+    # Bez nastavenia by si útočník každým pokusom vymyslel novú IP a limit by obišiel.
+    make_user(email="jan@example.com")
+    for i in range(settings.login_max_attempts):
+        login(client, "wrong password", headers={"X-Real-IP": f"6.6.6.{i}"})
+    assert login(client, PASSWORD, headers={"X-Real-IP": "7.7.7.7"}).status_code == 429
+
+
+def test_configured_ip_header_identifies_client(client, make_user, monkeypatch):
+    # Za proxy (Railway) prichádzajú všetci z jednej IP, skutočnú posiela proxy v hlavičke.
+    monkeypatch.setattr(settings, "client_ip_header", "X-Real-IP")
+    make_user(email="jan@example.com")
+    for _ in range(settings.login_max_attempts):
+        login(client, "wrong password", headers={"X-Real-IP": "1.1.1.1"})
+    assert login(client, PASSWORD, headers={"X-Real-IP": "1.1.1.1"}).status_code == 429
+    assert login(client, PASSWORD, headers={"X-Real-IP": "2.2.2.2"}).status_code == 200

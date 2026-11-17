@@ -5,7 +5,6 @@ import { BOOKING_HORIZON_DAYS, hourLabel, isSlotPast, slotLabel, slotStyle } fro
 import type { Booking } from '../types'
 
 type Props = {
-  token: string
   isAdmin: boolean
   // Číslo, ktoré rodič zvýši po každej zmene rezervácií (rovnaký trik ako pri Dashboarde).
   version: number
@@ -16,7 +15,7 @@ type Props = {
 
 // Zoznam pod kalendárom. Bežný používateľ v ňom vidí svoje najbližšie rezervácie,
 // admin rezervácie všetkých ľudí aj s e-mailom.
-function UpcomingBookings({ token, isAdmin, version, onSelectDay, onChanged, onUnauthorized }: Props) {
+function UpcomingBookings({ isAdmin, version, onSelectDay, onChanged, onUnauthorized }: Props) {
   const [bookings, setBookings] = useState<Booking[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +24,7 @@ function UpcomingBookings({ token, isAdmin, version, onSelectDay, onChanged, onU
     // Ďalej než BOOKING_HORIZON_DAYS sa rezervovať nedá, takže toto obdobie pokryje všetko budúce.
     const start = today()
 
-    getBookings(token, start, addDays(start, BOOKING_HORIZON_DAYS))
+    getBookings(start, addDays(start, BOOKING_HORIZON_DAYS))
       .then((data) => {
         if (!ignore) setBookings(data)
       })
@@ -37,7 +36,7 @@ function UpcomingBookings({ token, isAdmin, version, onSelectDay, onChanged, onU
     return () => {
       ignore = true
     }
-  }, [token, version, onUnauthorized])
+  }, [version, onUnauthorized])
 
   async function handleCancel(booking: Booking) {
     if (!confirm(`Naozaj zrušiť rezerváciu ${formatDayLong(booking.booking_date)} o ${hourLabel(booking.hour)}?`)) {
@@ -46,7 +45,7 @@ function UpcomingBookings({ token, isAdmin, version, onSelectDay, onChanged, onU
 
     setError(null)
     try {
-      await deleteBooking(token, booking.id)
+      await deleteBooking(booking.id)
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized()

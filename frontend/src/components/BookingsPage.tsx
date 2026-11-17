@@ -7,14 +7,13 @@ import MonthCalendar from './MonthCalendar'
 import UpcomingBookings from './UpcomingBookings'
 
 type Props = {
-  token: string
   isAdmin: boolean
   onUnauthorized: () => void
 }
 
 // Stránka s rezerváciami: veľký kalendár mesiaca, po kliknutí na deň hodinové termíny
 // toho dňa a pod tým zoznam najbližších rezervácií.
-function BookingsPage({ token, isAdmin, onUnauthorized }: Props) {
+function BookingsPage({ isAdmin, onUnauthorized }: Props) {
   // Zobrazený mesiac ako text "2026-11". today() vráti "2026-11-16", prvých 7 znakov je mesiac.
   const [month, setMonth] = useState(() => today().slice(0, 7))
   // Otvorený deň ("2026-11-23"); null = je vidieť kalendár celého mesiaca.
@@ -32,7 +31,7 @@ function BookingsPage({ token, isAdmin, onUnauthorized }: Props) {
     // Pýtame si celú mriežku kalendára, teda aj pár dní zo susedných mesiacov na okrajoch.
     const days = monthGrid(month)
 
-    getBookings(token, days[0], days[days.length - 1])
+    getBookings(days[0], days[days.length - 1])
       .then((items) => {
         if (ignore) return
         setLoaded({ month, items })
@@ -50,7 +49,7 @@ function BookingsPage({ token, isAdmin, onUnauthorized }: Props) {
     return () => {
       ignore = true
     }
-  }, [token, month, version, onUnauthorized])
+  }, [month, version, onUnauthorized])
 
   function reload() {
     setVersion((count) => count + 1)
@@ -86,7 +85,6 @@ function BookingsPage({ token, isAdmin, onUnauthorized }: Props) {
         // a rozpísanú poznámku z predošlého dňa.
         <DaySlots
           key={selectedDay}
-          token={token}
           day={selectedDay}
           bookings={bookings}
           onBack={() => setSelectedDay(null)}
@@ -97,7 +95,6 @@ function BookingsPage({ token, isAdmin, onUnauthorized }: Props) {
       )}
 
       <UpcomingBookings
-        token={token}
         isAdmin={isAdmin}
         version={version}
         onSelectDay={openDay}

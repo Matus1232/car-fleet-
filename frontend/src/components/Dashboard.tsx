@@ -4,7 +4,6 @@ import { STK_SOON_DAYS } from '../dates'
 import type { StkFilter, VehicleStats } from '../types'
 
 type Props = {
-  token: string
   // Číslo, ktoré rodič zvýši po každej zmene áut. Je v závislostiach useEffect, takže jeho
   // zmena = načítaj štatistiky znova (rovnaký trik ako reloadCount vo VehiclesPage).
   version: number
@@ -15,13 +14,13 @@ type Props = {
   onUnauthorized: () => void
 }
 
-function Dashboard({ token, version, filter, onFilter, onUnauthorized }: Props) {
+function Dashboard({ version, filter, onFilter, onUnauthorized }: Props) {
   const [stats, setStats] = useState<VehicleStats | null>(null)
 
   useEffect(() => {
     let ignore = false
 
-    getVehicleStats(token)
+    getVehicleStats()
       .then((data) => {
         if (!ignore) setStats(data)
       })
@@ -33,7 +32,7 @@ function Dashboard({ token, version, filter, onFilter, onUnauthorized }: Props) 
     return () => {
       ignore = true
     }
-  }, [token, version, onUnauthorized])
+  }, [version, onUnauthorized])
 
   // Kým dáta neprišli, namiesto čísla ukážeme pomlčku. stats?.total je undefined, keď stats je null.
   const show = (value: number | undefined) => value ?? '–'

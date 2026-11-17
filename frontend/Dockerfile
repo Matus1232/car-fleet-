@@ -17,6 +17,11 @@ RUN npm run build
 
 # Produkcia: nginx len posiela hotové statické súbory, Node.js tu už netreba.
 FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx.conf je šablóna: pri štarte do nej obraz nginx dosadí premenné prostredia
+# a výsledok uloží ako /etc/nginx/conf.d/default.conf. Tu sú predvolené hodnoty pre docker compose,
+# Railway ich prepíše vlastnými (PORT nastaví sám, API_UPSTREAM ty v nastaveniach služby).
+ENV PORT=80 \
+    API_UPSTREAM=http://api:8000
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

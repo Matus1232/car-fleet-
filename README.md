@@ -22,7 +22,8 @@ emisná kontrola, poistenie a diaľničná známka.
 ## Čo aplikácia vie
 
 Po prihlásení sa zobrazí úvodná stránka s menu. Admin v ňom má **Vozový park** a **Rezervácie servisu**,
-vodič len **Termín servisu**.
+vodič **Termín servisu**. Obaja vidia aj **Cenník** servisných úkonov a **E-shop**, ktorý sa zatiaľ len
+pripravuje.
 
 ### Vozový park (len admin)
 
@@ -51,14 +52,24 @@ Pod kalendárom má vodič zoznam svojich rezervácií a môže ich zrušiť. Cu
 obsadené. Admin vidí v kalendári aj v zozname rezervácie všetkých ľudí s e-mailom a poznámkou
 a môže zrušiť hocktorú.
 
+### Cenník a e-shop
+
+Cenník ukazuje orientačné ceny bežných úkonov (výmena oleja, diagnostika, prezutie, ...) s odkazom
+na rezerváciu termínu. Ceny sú napevno vo frontende, v
+[`PriceListPage.tsx`](frontend/src/components/PriceListPage.tsx). E-shop zatiaľ len oznamuje,
+že sa pripravuje.
+
 Pár vecí, ktoré nie sú na prvý pohľad vidieť:
 
 - **ŠPZ sa ukladá v jednotnom tvare.** `ba 123-ab`, `BA 123 AB` aj `BA123AB` sú pre aplikáciu to isté
   auto, takže ho nejde zadať dvakrát.
 - **Obnovenie stránky nikoho neodhlási.** Prihlásenie platí 30 minút (dá sa zmeniť v `.env`). Keď vyprší, aplikácia
   používateľa pri ďalšej akcii vráti na prihlasovaciu stránku.
+- **Token neukradne ani podstrčený skript.** Prehliadač ho drží v httpOnly cookie, ktorú JavaScript
+  na stránke nevidí. Bližšie v časti [Prihlásenie](#prihlásenie).
+- **Odhlásenie platí hneď.** Odhlásený token prestane fungovať okamžite, aj keby si ho niekto skopíroval.
 - **Heslá sa nedajú hádať donekonečna.** Po 10 neúspešných pokusoch z jednej IP adresy
-  sa z nej 15 minút nedá prihlásiť.
+  sa z nej 15 minút nedá prihlásiť. Pokusy sú v databáze, takže ich nevynuluje ani reštart aplikácie.
 - **Heslá sa neukladajú.** V databáze je len ich hash (Argon2), z ktorého sa pôvodné heslo nedá získať.
 - **Registráciou nevznikne admin.** Rolu si človek nevyberá, nový účet je vždy vodič. Z jednej IP adresy
   sa dá založiť najviac 10 účtov za hodinu.
@@ -79,13 +90,14 @@ spúšťajú v GitHub Actions.
 
 ```mermaid
 flowchart LR
-    W["Webový server<br>port 5173"] -. "pošle aplikáciu" .-> F["Aplikácia<br>v prehliadači"]
-    F -- "požiadavky s tokenom" --> A["API<br>port 8000"]
+    F["Aplikácia<br>v prehliadači"] -- "stránka aj /api" --> W["Webový server<br>port 5173"]
+    W -- "/api" --> A["API<br>port 8000"]
     A -- "číta a zapisuje" --> D[("Databáza")]
 ```
 
-Webový server pošle prehliadaču aplikáciu len raz, pri otvorení stránky. Potom už aplikácia
-komunikuje iba s API: pýta si autá, posiela zmeny a dostáva späť dáta.
+Prehliadač komunikuje len s jednou adresou. Webový server mu pošle aplikáciu a požiadavky
+na `/api/...` posiela ďalej na API (`/api/vehicles` → `/vehicles`). Pri vývoji to robí Vite,
+v produkcii nginx. Na API sa tak zvonka nedá dostať priamo a cookie s tokenom môže byť čo najprísnejšia.
 
 ### Prihlásenie
 
@@ -100,16 +112,26 @@ sequenceDiagram
     F->>A: pošle prihlasovacie údaje
     A->>D: nájde používateľa
     A->>A: overí heslo
-    A-->>F: vráti token
-    F->>F: uloží si token
-    F->>A: kto som?
+    A-->>F: token v httpOnly cookie
+    F->>A: kto som? (prehliadač pripojí cookie sám)
     A-->>F: e-mail a rola
     F->>A: daj prvých 10 áut
     A-->>F: zoznam áut
 ```
 
-Token je podpísaný „preukaz“, ktorý aplikácia od tej chvíle posiela pri každej požiadavke.
-API podľa neho spozná, kto sa pýta, a nemusí si pamätať žiadne prihlásenia.
+Token je podpísaný „preukaz“ (JWT). API podľa neho spozná, kto sa pýta, a nemusí si pamätať
+žiadne prihlásenia. Kde token leží a ako sa ruší:
+
+| Čo | Ako | Prečo |
+|---|---|---|
+| Token je v **httpOnly cookie** | JavaScript ju neprečíta, prehliadač ju pripojí sám | keby sa do stránky dostal cudzí skript (XSS), token neukradne |
+| Cookie má **SameSite=Strict** a **Secure** | prehliadač ju pošle len našej stránke a len cez HTTPS | cudzia stránka ju nepoužije a cestou sa nedá odpočúvať |
+| Pri zmenách cez cookie musí prísť hlavička **`X-Requested-With`** | náš frontend ju posiela vždy, cudzí formulár ju pridať nevie | druhá poistka proti CSRF (cudzia stránka odošle požiadavku v tvojom mene) |
+| **Odhlásenie** zapíše ID tokenu do tabuľky `revoked_tokens` | API taký token už neprijme | odhlásenie platí hneď, nie až keď token o 30 minút vyprší |
+| Prísna **Content-Security-Policy** z nginx | prehliadač spustí len skripty z našej adresy | ďalšia ochrana proti XSS |
+
+Swagger (`/docs`) a testy posielajú token po starom, v hlavičke `Authorization: Bearer`. Tú prehliadač
+nikdy nepridá sám, preto pri nej kontrola `X-Requested-With` netreba.
 
 ### Kto čo smie
 
@@ -165,7 +187,6 @@ nespravil `.env.txt`) s týmto obsahom:
 POSTGRES_USER=carfleet
 POSTGRES_PASSWORD=change-me
 POSTGRES_DB=carfleet
-CORS_ORIGINS=http://localhost:5173
 SECRET_KEY=
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
@@ -173,7 +194,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 | Premenná | Načo je |
 |---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | používateľ, heslo a názov databázy, ktorá sa vytvorí pri prvom spustení |
-| `CORS_ORIGINS` | adresa, z ktorej smie prehliadač volať API; bez nej prehliadač požiadavky zablokuje |
 | `SECRET_KEY` | tajný kľúč na podpisovanie tokenov, aspoň 32 znakov |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | ako dlho platí prihlásenie |
 
@@ -245,7 +265,39 @@ a API sa samo reštartuje.
 
 Príkaz `docker compose -f docker-compose.yml up -d` spustí aplikáciu tak, ako by bežala na serveri.
 Frontend sa vopred zostaví do hotových súborov, ktoré posiela nginx, API beží bez automatického
-reštartu a dokumentácia na `/docs` je vypnutá.
+reštartu a dokumentácia na `/docs` je vypnutá. Cookie s tokenom je v tomto režime len pre HTTPS
+(`Secure`). Chrome a Firefox ju na `http://localhost` povolia, iné prehliadače nemusia.
+
+## Nasadenie na Railway
+
+Na [Railway](https://railway.com) vytvor v jednom projekte tri služby:
+
+1. **PostgreSQL** z ponuky databáz.
+2. **Backend**: z tohto repozitára, priečinok `backend`. Railway nájde `Dockerfile` sám.
+3. **Frontend**: z tohto repozitára, priečinok `frontend`.
+
+**Verejnú doménu (Generate Domain) daj len frontendu.** Backend musí byť dostupný iba cez súkromnú
+sieť Railway. Inak by si ktokoľvek mohol poslať vymyslenú hlavičku `X-Real-IP` a obísť limit
+na hádanie hesiel.
+
+Premenné prostredia backendu:
+
+| Premenná | Hodnota |
+|---|---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}`, Railway sem dosadí adresu databázy (aplikácia si ju sama upraví pre ovládač psycopg) |
+| `SECRET_KEY` | nový náhodný kľúč (pozri [krok 3](#3-vygeneruj-tajný-kľúč)), nie ten z `.env` |
+| `CLIENT_IP_HEADER` | `X-Real-IP`, v nej posiela Railway skutočnú IP návštevníka |
+
+Premenná prostredia frontendu:
+
+| Premenná | Hodnota |
+|---|---|
+| `API_UPSTREAM` | súkromná adresa backendu, napr. `http://backend.railway.internal:8000` (podľa názvu služby) |
+
+`PORT` nastaví Railway sám. HTTPS rieši Railway: nginx presmeruje `http://` na `https://` a pošle
+hlavičku HSTS, aby prehliadač nabudúce otváral stránku rovno cez HTTPS. Migrácie databázy sa spustia
+pri každom štarte backendu. Prvého admina vytvoríš príkazom `python -m app.cli create-admin` v termináli
+služby backend (Railway CLI: `railway ssh`).
 
 ## Testy
 
@@ -304,7 +356,9 @@ Potom v priečinku `frontend`:
 | `npm run build` | skontroluje typy a zostaví hotovú verziu do `dist/` |
 | `npm run lint` | skontroluje kód (oxlint) |
 
-Adresa API je napevno v [`frontend/src/api.ts`](frontend/src/api.ts) (`http://localhost:8000`).
+Vite posiela požiadavky na `/api` na `http://localhost:8000` (nastavenie je vo
+[`frontend/vite.config.ts`](frontend/vite.config.ts)). Ak spúšťaš aj backend mimo Dockeru, pridaj do `.env`
+riadok `COOKIE_SECURE=false`, lebo lokálne nebeží HTTPS.
 Popis jednotlivých súborov frontendu je vo [frontend/README.md](frontend/README.md).
 
 ## Štruktúra projektu
@@ -323,9 +377,13 @@ docker-compose.override.yml  vývojové nastavenie, Docker ho načíta automatic
 - [x] Docker Compose, PostgreSQL, databázové migrácie
 - [x] API na správu áut
 - [x] Prihlásenie, roly a ochrana proti hádaniu hesiel
+- [x] Token v httpOnly cookie, odhlásenie so zrušením tokenu, rate limiter v databáze
+- [x] Príprava na nasadenie na Railway (nginx proxy, HTTPS, bezpečnostné hlavičky)
 - [x] Testy a CI pre backend
 - [x] Frontend: prihlásenie, zoznam áut, pridanie, úprava, mazanie
 - [x] Servisná história áut s cenou
 - [x] Prehľad: počet áut, končiaca a neplatná STK
 - [x] Registrácia, úvodná stránka a rezervácia termínov servisu v kalendári
+- [x] Cenník servisných úkonov
+- [ ] E-shop
 - [ ] Ďalšie termíny (emisná kontrola, poistenie, diaľničná známka)

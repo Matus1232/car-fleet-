@@ -43,6 +43,18 @@ function HomePage({ user }: Props) {
           </span>
           <span className="menu-go">Otvoriť →</span>
         </Link>
+
+        <Link className="menu-card prices-card" to="/prices">
+          <span className="menu-title">Cenník</span>
+          <span className="menu-text">Koľko stojí výmena oleja, diagnostika, prezutie a ďalšie úkony.</span>
+          <span className="menu-go">Otvoriť →</span>
+        </Link>
+
+        <Link className="menu-card shop-card" to="/shop">
+          <span className="menu-title">E-shop</span>
+          <span className="menu-text">Náhradné diely a autokozmetika. Pripravujeme.</span>
+          <span className="menu-go">Otvoriť →</span>
+        </Link>
       </nav>
     </>
   )

@@ -9,6 +9,7 @@
   --row-hover: #f8f9fb;
   --danger: #b42318;
   --radius: 6px;
+  --band: #e4edf7; /* bledomodrý šikmý pás na pozadí */
 }
 
 * {
@@ -23,6 +24,21 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Bledomodrý pás šikmo cez stránku, len ozdoba v pozadí.
+   ::before je "pseudo-element": CSS si ho vyrobí samo, v HTML žiadny nie je.
+   position: fixed + inset: 0 = vrstva presne cez celé okno, pri posúvaní stránky stojí na mieste.
+   Pás nie je otočený obdĺžnik (ten by mohol trčať z okna a stránka by sa dala posúvať do strany),
+   ale prechod farieb: 115deg je smer, medzi 34 % a 52 % je modrá, okolo priehľadná.
+   z-index: -1 ho dá pod všetok obsah, pointer-events: none = klik ním prejde, akoby tam nebol. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 34%, var(--band) 34%, var(--band) 52%, transparent 52%);
 }
 
 main,
@@ -553,7 +569,69 @@ td .actions {
   color: var(--muted);
 }
 
-/* Úvodná stránka: privítanie a menu s dvoma kartami */
+/* Odkaz, ktorý vyzerá ako čierne tlačidlo (napr. "Rezervovať termín" v cenníku) */
+.button-link {
+  display: inline-block;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  background: var(--text);
+  border: 1px solid var(--text);
+  border-radius: var(--radius);
+  transition: background-color 0.15s;
+}
+
+.button-link:hover {
+  background: #2b3138;
+}
+
+.button-link:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Cenník: názov služby tučne, popis sivou, poznámka pod tabuľkou */
+td.strong {
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.footnote {
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* E-shop: oznam v strede bielej karty */
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.coming-soon img {
+  margin-bottom: 8px;
+}
+
+.coming-soon p {
+  max-width: 42ch;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+/* Úvodná stránka: privítanie a menu s kartami */
 
 .welcome {
   margin: 16px 0 32px;
@@ -606,6 +684,18 @@ td .actions {
 .menu-card.calendar-card {
   background-image: url('./assets/calendar-outline.svg');
   background-position: right 28px bottom 20px;
+  background-size: auto 56%;
+}
+
+.menu-card.prices-card {
+  background-image: url('./assets/receipt-outline.svg');
+  background-position: right 28px bottom 14px;
+  background-size: auto 62%;
+}
+
+.menu-card.shop-card {
+  background-image: url('./assets/cart-outline.svg');
+  background-position: right 24px bottom 16px;
   background-size: auto 56%;
 }
 

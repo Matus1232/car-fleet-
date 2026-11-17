@@ -23,8 +23,12 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      # Skutočnú IP klienta posiela nginx (služba web) v hlavičke X-Real-IP.
+      CLIENT_IP_HEADER: X-Real-IP
     ports:
-      - "8000:8000"
+      # Len pre tento počítač (127.0.0.1): prehliadač volá API cez web na porte 5173.
+      # Port ostáva kvôli /docs. Zvonka by sa dalo poslať vymyslené X-Real-IP priamo na API.
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy

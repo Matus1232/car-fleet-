@@ -3,20 +3,24 @@
 React + TypeScript aplikácia postavená na Vite. Ako ju spustiť, je v [hlavnom README](../README.md#spustenie).
 
 V Dockeri ju spúšťa `Dockerfile` v tomto priečinku: vo vývoji fáza `dev` (Vite dev server),
-v produkcii posledná fáza, kde hotový build posiela nginx podľa `nginx.conf`.
+v produkcii posledná fáza, kde hotový build posiela nginx podľa `nginx.conf` (šablóna: `/api` posiela
+na backend, presmeruje na HTTPS a pridá bezpečnostné hlavičky). Pri vývoji posiela `/api` ďalej Vite
+(`vite.config.ts`).
 
 ## Súbory v `src/`
 
 ```
 main.tsx                  vstupný bod: vykreslí App do <div id="root"> v index.html
-App.tsx                   token a prihlásený používateľ, hlavička, stránky (React Router)
-api.ts                    všetka komunikácia s backendom (fetch, token v hlavičke, texty chýb)
+App.tsx                   prihlásený používateľ (z GET /auth/me), hlavička, stránky (React Router)
+api.ts                    všetka komunikácia s backendom cez /api (fetch, hlavička proti CSRF, texty chýb)
 types.ts                  TypeScript typy zodpovedajúce schémam backendu (Vehicle, User, ...)
 dates.ts                  pomocné funkcie na dátumy (dnešok, formátovanie, dni do termínu, mriežka mesiaca)
 slots.ts                  pravidlá rezervácií: otváracie hodiny, čo je minulosť, farba termínu
 index.css                 všetky štýly
 assets/car-outline.svg    sivý obrys auta na pozadí dashboardu a karty v menu
 assets/calendar-outline.svg  sivý obrys kalendára na karte v menu
+assets/receipt-outline.svg   sivý obrys bločku na karte Cenník
+assets/cart-outline.svg      sivý obrys košíka na karte E-shop a na stránke e-shopu
 components/
   LoginForm.tsx           prihlasovací formulár
   RegisterForm.tsx        registrácia nového účtu, po nej rovno prihlási
@@ -25,6 +29,8 @@ components/
   MonthCalendar.tsx       veľký kalendár mesiaca (len zobrazuje, dáta dostane cez props)
   DaySlots.tsx            hodinové termíny jedného dňa: rezervácia a zrušenie
   UpcomingBookings.tsx    zoznam najbližších rezervácií pod kalendárom
+  PriceListPage.tsx       cenník servisných úkonov (ceny sú napevno v súbore)
+  ShopPage.tsx            e-shop, zatiaľ len oznam „pripravujeme“
   VehiclesPage.tsx        stránka s autami: načítanie, stránkovanie, pridanie, úprava, mazanie
   Dashboard.tsx           prehľad hore: počet áut, končiaca STK, autá po STK
   VehicleList.tsx         tabuľka áut (len zobrazuje, dáta dostane cez props)
@@ -43,6 +49,8 @@ flowchart TD
     App --> HomePage
     App --> VehiclesPage
     App --> BookingsPage
+    App --> PriceListPage
+    App --> ShopPage
     VehiclesPage --> Dashboard
     VehiclesPage --> VehicleForm
     VehiclesPage --> VehicleServices
@@ -63,7 +71,8 @@ flowchart TD
 ```
 
 Dáta tečú zhora nadol cez props, udalosti idú hore cez funkcie v props (`onLogin`, `onSave`, `onDelete`, ...).
-Token a prihláseného používateľa drží `App`, autá a stránkovanie `VehiclesPage`,
+Prihláseného používateľa drží `App` (token je v httpOnly cookie, `App` sa pri štarte len opýta
+`GET /auth/me`), autá a stránkovanie `VehiclesPage`,
 zobrazený mesiac, otvorený deň a rezervácie `BookingsPage`.
 
 ## Stránky
@@ -75,6 +84,8 @@ zobrazený mesiac, otvorený deň a rezervácie `BookingsPage`.
 | `/` | úvodná stránka s menu |
 | `/vehicles` | zoznam áut, len pre admina (ostatných presmeruje na `/`) |
 | `/bookings` | kalendár s termínmi servisu |
+| `/prices` | cenník |
+| `/shop` | e-shop (pripravujeme) |
 | hocičo iné | prihláseného presmeruje na `/`, neprihláseného na `/login` |
 
 Prihlásený sa na `/login` a `/register` nedostane (presmeruje ho na `/`), neprihlásený vidí len tieto dve stránky.
