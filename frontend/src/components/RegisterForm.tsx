@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { errorMessage, login, register } from '../api'
 
 type Props = {
-  onLogin: (token: string) => void
+  onLogin: () => Promise<void> // volá sa po registrácii a prihlásení (pozri LoginForm)
 }
 
 function RegisterForm({ onLogin }: Props) {
@@ -27,8 +27,9 @@ function RegisterForm({ onLogin }: Props) {
     setLoading(true)
     try {
       await register(email, password)
-      // Registrácia token nevracia, tak používateľa rovno prihlásime tými istými údajmi.
-      onLogin(await login(email, password))
+      // Registrácia neprihlasuje, tak používateľa rovno prihlásime tými istými údajmi.
+      await login(email, password)
+      await onLogin()
     } catch (err) {
       setError(errorMessage(err))
     } finally {

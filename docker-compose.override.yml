@@ -4,6 +4,8 @@ services:
   api:
     environment:
       ENVIRONMENT: development  # zapne /docs; v produkcii (bez tohto súboru) ostane production
+      COOKIE_SECURE: "false"    # lokálne beží všetko cez http://, nie https://
+      CLIENT_IP_HEADER: ""      # Vite proxy X-Real-IP nenastavuje, berieme IP spojenia
     command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
     volumes:
       - ./backend:/code        # live reload pri vývoji
@@ -14,6 +16,7 @@ services:
       target: dev              # Vite dev server namiesto nginx
     environment:
       VITE_USE_POLLING: "true"
+      API_PROXY_TARGET: http://api:8000  # kam Vite posiela /api (pozri vite.config.ts)
     volumes:
       - ./frontend:/app        # zmeny v kóde sa hneď prejavia v prehliadači
       - /app/node_modules      # node_modules ostane z kontajnera (Linux), neprekryje ho priečinok z Windows

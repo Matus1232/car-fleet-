@@ -6,7 +6,6 @@ import { BOOKING_HORIZON_DAYS, dayState, isSlotPast, SLOT_HOURS, slotLabel, slot
 import type { Booking } from '../types'
 
 type Props = {
-  token: string
   day: string // otvorený deň, napr. "2026-11-23"
   bookings: Booking[] | null // rezervácie zobrazeného mesiaca; null = ešte sa načítavajú
   onBack: () => void // späť na kalendár mesiaca
@@ -24,7 +23,7 @@ function nextWorkday(day: string, step: 1 | -1): string {
 
 // Jeden deň rozdelený na hodinové termíny. Voľný termín je farebné tlačidlo; po kliknutí
 // sa pod termínmi objaví formulár na potvrdenie rezervácie.
-function DaySlots({ token, day, bookings, onBack, onSelectDay, onChanged, onUnauthorized }: Props) {
+function DaySlots({ day, bookings, onBack, onSelectDay, onChanged, onUnauthorized }: Props) {
   const [selectedHour, setSelectedHour] = useState<number | null>(null)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -55,7 +54,7 @@ function DaySlots({ token, day, bookings, onBack, onSelectDay, onChanged, onUnau
     setError(null)
     setSaving(true)
     try {
-      await createBooking(token, { booking_date: day, hour: selectedHour, note })
+      await createBooking({ booking_date: day, hour: selectedHour, note })
       setSelectedHour(null)
       setNote('')
       onChanged()
@@ -72,7 +71,7 @@ function DaySlots({ token, day, bookings, onBack, onSelectDay, onChanged, onUnau
 
     setError(null)
     try {
-      await deleteBooking(token, booking.id)
+      await deleteBooking(booking.id)
       onChanged()
     } catch (err) {
       handleError(err)

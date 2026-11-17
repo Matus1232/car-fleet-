@@ -11,13 +11,15 @@ if not TEST_DATABASE_URL:
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["ENVIRONMENT"] = "development"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256"
+# TestClient beží cez http://testserver. Cookie so Secure by cez HTTP neposlal späť.
+os.environ["COOKIE_SECURE"] = "false"
+os.environ["CLIENT_IP_HEADER"] = ""
 
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from alembic import command  # noqa: E402
-from app.api.auth import login_limiter, register_limiter  # noqa: E402
 from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.db.session import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -38,14 +40,13 @@ def _migrated_database():
 @pytest.fixture(autouse=True)
 def _clean_tables():
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE bookings, service_records, vehicles, users RESTART IDENTITY"))
-
-
-@pytest.fixture(autouse=True)
-def _reset_limiters():
-    # Limitery si pamätajú pokusy v pamäti, takže by sa inak prenášali z testu do testu.
-    login_limiter.reset()
-    register_limiter.reset()
+        # Aj pokusy rate limitera a odhlásené tokeny sú v databáze, takže sa vyčistia s ostatným.
+        conn.execute(
+            text(
+                "TRUNCATE bookings, service_records, vehicles, users, "
+                "rate_limit_hits, revoked_tokens RESTART IDENTITY"
+            )
+        )
 
 
 PASSWORD = "correct horse battery"

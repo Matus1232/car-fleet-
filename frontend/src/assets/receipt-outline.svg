@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" fill="none" stroke="#c6cdd5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- bloček so zúbkovaným spodkom -->
+  <path d="M44 14 H156 V150 L144 160 L132 150 L120 160 L108 150 L96 160 L84 150 L72 160 L60 150 L44 160 Z"/>
+  <!-- položky: názov vľavo, cena vpravo -->
+  <path d="M64 44 H112"/>
+  <path d="M126 44 H136"/>
+  <path d="M64 68 H104"/>
+  <path d="M126 68 H136"/>
+  <path d="M64 92 H116"/>
+  <path d="M126 92 H136"/>
+  <!-- čiara a súčet -->
+  <path d="M64 114 H136" stroke-dasharray="4 6"/>
+  <path d="M64 132 H96"/>
+  <path d="M116 132 H136"/>
+</svg>

@@ -33,12 +33,11 @@ const FILTER_TEXTS: Record<StkFilter, { title: string; empty: string }> = {
 }
 
 type Props = {
-  token: string
   isAdmin: boolean
   onUnauthorized: () => void
 }
 
-function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
+function VehiclesPage({ isAdmin, onUnauthorized }: Props) {
   const [page, setPage] = useState<VehiclePage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -53,12 +52,12 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   // To isté pre dashboard: zvýšime ho po každom pridaní, úprave a zmazaní auta.
   const [statsVersion, setStatsVersion] = useState(0)
 
-  // Spustí sa po prvom zobrazení a potom vždy, keď sa zmení token, strana, filter alebo reloadCount.
+  // Spustí sa po prvom zobrazení a potom vždy, keď sa zmení strana, filter alebo reloadCount.
   useEffect(() => {
     // Ak komponent zmizne skôr, než príde odpoveď, výsledok už nechceme zapisovať do state.
     let ignore = false
 
-    getVehicles(token, skip, PAGE_SIZE, stkFilter)
+    getVehicles(skip, PAGE_SIZE, stkFilter)
       .then((data) => {
         if (ignore) return
         if (data.items.length === 0 && data.total > 0) {
@@ -81,7 +80,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
     return () => {
       ignore = true
     }
-  }, [token, skip, stkFilter, reloadCount, onUnauthorized])
+  }, [skip, stkFilter, reloadCount, onUnauthorized])
 
   function reload() {
     setReloadCount((count) => count + 1)
@@ -103,7 +102,7 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
 
     setDeleteError(null)
     try {
-      await deleteVehicle(token, vehicle.id)
+      await deleteVehicle(vehicle.id)
       setStatsVersion((version) => version + 1)
       if (editing?.id === vehicle.id) closeForm() // zmazané auto už nemá zmysel upravovať
       if (servicing?.id === vehicle.id) setServicing(null) // jeho servis zmizol spolu s ním
@@ -149,16 +148,16 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   async function handleSave(data: VehicleInput) {
     try {
       if (editing === null) {
-        await createVehicle(token, data)
+        await createVehicle(data)
         // Nové auto má najväčšie id, takže je na poslednej strane všetkých áut. Prejdeme tam.
         // Pri zapnutom filtri page.total ráta len vyfiltrované autá, preto si počet všetkých
         // vypýtame zo štatistík (tie už nové auto započítali) a filter vypneme.
-        const total = stkFilter === null ? (page?.total ?? 0) + 1 : (await getVehicleStats(token)).total
+        const total = stkFilter === null ? (page?.total ?? 0) + 1 : (await getVehicleStats()).total
         setStkFilter(null)
         setSkip(lastPageSkip(total))
         reload()
       } else {
-        const updated = await updateVehicle(token, editing.id, data)
+        const updated = await updateVehicle(editing.id, data)
         if (stkFilter === null) {
           // Upravené auto vymeníme na jeho mieste, ostatné necháme tak.
           setPage((prev) => prev && { ...prev, items: prev.items.map((v) => (v.id === updated.id ? updated : v)) })
@@ -190,7 +189,6 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
   return (
     <>
       <Dashboard
-        token={token}
         version={statsVersion}
         filter={stkFilter}
         onFilter={changeFilter}
@@ -211,7 +209,6 @@ function VehiclesPage({ token, isAdmin, onUnauthorized }: Props) {
         // key: pri prepnutí na iné auto sa panel vytvorí nanovo a načíta jeho záznamy.
         <VehicleServices
           key={servicing.id}
-          token={token}
           vehicle={servicing}
           isAdmin={isAdmin}
           onClose={() => setServicing(null)}

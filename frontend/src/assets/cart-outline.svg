@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" fill="none" stroke="#c6cdd5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- rukoväť a košík -->
+  <path d="M14 30 H40 L64 120 H158"/>
+  <path d="M48 58 H182 L164 120"/>
+  <!-- priečky košíka -->
+  <path d="M84 58 L92 120"/>
+  <path d="M118 58 L120 120"/>
+  <path d="M152 58 L146 120"/>
+  <path d="M56 89 H172"/>
+  <!-- kolieska -->
+  <circle cx="80" cy="148" r="12"/>
+  <circle cx="144" cy="148" r="12"/>
+</svg>

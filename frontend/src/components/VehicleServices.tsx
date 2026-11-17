@@ -5,7 +5,6 @@ import { formatDate, today } from '../dates'
 import type { ServiceRecord, Vehicle } from '../types'
 
 type Props = {
-  token: string
   vehicle: Vehicle
   isAdmin: boolean
   onClose: () => void
@@ -15,7 +14,7 @@ type Props = {
 // Formátovač vytvoríme raz, mimo komponentu: 89.9 -> "89,90 €".
 const money = new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' })
 
-function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: Props) {
+function VehicleServices({ vehicle, isAdmin, onClose, onUnauthorized }: Props) {
   const [records, setRecords] = useState<ServiceRecord[] | null>(null) // null = ešte sa načítava
   const [error, setError] = useState<string | null>(null)
   const [serviceDate, setServiceDate] = useState(today)
@@ -35,7 +34,7 @@ function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: P
   useEffect(() => {
     let ignore = false
 
-    getServices(token, vehicle.id)
+    getServices(vehicle.id)
       .then((data) => {
         if (!ignore) setRecords(data)
       })
@@ -51,7 +50,7 @@ function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: P
     return () => {
       ignore = true
     }
-  }, [token, vehicle.id, onUnauthorized])
+  }, [vehicle.id, onUnauthorized])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -59,9 +58,9 @@ function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: P
     setSaving(true)
     try {
       // Cenu posielame ako text ("89.90"), nie ako číslo: backend z nej spraví presný Decimal.
-      await createService(token, vehicle.id, { description, cost, service_date: serviceDate })
+      await createService(vehicle.id, { description, cost, service_date: serviceDate })
       // Zoznam si vypýtame znova, takže poradie aj zaokrúhlenie určí backend.
-      setRecords(await getServices(token, vehicle.id))
+      setRecords(await getServices(vehicle.id))
       setDescription('')
       setCost('')
     } catch (err) {
@@ -76,8 +75,8 @@ function VehicleServices({ token, vehicle, isAdmin, onClose, onUnauthorized }: P
 
     setError(null)
     try {
-      await deleteService(token, vehicle.id, record.id)
-      setRecords(await getServices(token, vehicle.id))
+      await deleteService(vehicle.id, record.id)
+      setRecords(await getServices(vehicle.id))
     } catch (err) {
       handleError(err)
     }
