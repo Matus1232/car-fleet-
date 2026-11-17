@@ -1,6 +1,6 @@
 # Frontend
 
-React + TypeScript aplikácia postavená na Vite. Ako ju spustiť, je v [hlavnom README](../README.md#spustenie).
+React + TypeScript aplikácia postavená na Vite. Prehľad celého projektu je v [hlavnom README](../README.md).
 
 V Dockeri ju spúšťa `Dockerfile` v tomto priečinku: vo vývoji fáza `dev` (Vite dev server),
 v produkcii posledná fáza, kde hotový build posiela nginx podľa `nginx.conf` (šablóna: `/api` posiela
